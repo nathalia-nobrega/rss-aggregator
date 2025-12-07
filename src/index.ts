@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
 import http from "http";
 
+// FIX: VALIDATE IF THE REQUIRED PARAMETERS AND BEING SENT
+
 type RSSData = {
     id: string;
     title: string;
@@ -36,13 +38,31 @@ const server = http.createServer((req, res) => {
         console.log(`Received request for ${method} ${url}`);
         res.end("HIIIII");
     }
-    // Route: GET /links
-    else if (method === "GET" && url === "/links") {
+    // Route: GET /feeds
+    else if (method === "GET" && url === "/feeds") {
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(data));
     }
-    // Route: POST /links
-    else if (method === "POST" && url === "/links") {
+    // Route: GET /feeds/:id
+    else if (method === "GET" && url?.startsWith("/feeds/")) {
+        try {
+            const id = url.substring(url.lastIndexOf("/") + 1);
+
+            const feedFound = data.find((feed) => feed.id === id);
+
+            if (!feedFound)
+                throw new Error("Couldn't find a feed with the given id");
+
+            res.writeHead(200, { "content-type": "application/json" });
+            res.end(JSON.stringify(feedFound));
+        } catch (err: any) {
+            console.error(err);
+            res.writeHead(404, { "content-type": "application/json" });
+            res.end(JSON.stringify(err.toString()));
+        }
+    }
+    // Route: POST /feeds
+    else if (method === "POST" && url === "/feeds") {
         let body = "";
 
         req.setEncoding("utf-8");
@@ -53,19 +73,19 @@ const server = http.createServer((req, res) => {
 
         req.on("end", () => {
             try {
-                const newLink: RSSData = JSON.parse(body);
-                newLink.id = randomUUID();
-                data.push(newLink);
+                const newFeed: RSSData = JSON.parse(body);
+                newFeed.id = randomUUID();
+                data.push(newFeed);
                 res.writeHead(201, { "content-type": "application/json" });
-                res.end(JSON.stringify(newLink));
-            } catch (err) {
+                res.end(JSON.stringify(newFeed));
+            } catch (err: any) {
                 res.writeHead(400, { "content-type": "application/json" });
-                console.error(err);
+                res.end(JSON.stringify(err.toString()));
             }
         });
     }
-    // Route: PUT /links/{id}
-    else if (method === "PUT" && url?.startsWith("/links/")) {
+    // Route: PUT /feeds/{id}
+    else if (method === "PUT" && url?.startsWith("/feeds/")) {
         const id = url.substring(url.lastIndexOf("/") + 1);
 
         let body = "";
@@ -78,26 +98,42 @@ const server = http.createServer((req, res) => {
 
         req.on("end", () => {
             try {
-                // TODO: Throw an error if there is an existing link with the same URL
-                let existingLink = data.find((link) => link.id === id);
+                // TODO: Throw an error if there is an existing feed with the same URL
+                let existingFeed = data.find((feed) => feed.id === id);
 
-                if (!existingLink)
-                    throw new Error("Couldn't find a link with the given id");
+                if (!existingFeed)
+                    throw new Error("Couldn't find a feed with the given id");
 
-                const updatedLink: RSSData = JSON.parse(body);
-                existingLink.author = updatedLink.author;
-                existingLink.title = updatedLink.title;
-                existingLink.url = updatedLink.url;
+                const updatedFeed: RSSData = JSON.parse(body);
+                existingFeed.author = updatedFeed.author;
+                existingFeed.title = updatedFeed.title;
+                existingFeed.url = updatedFeed.url;
                 res.writeHead(200, { "content-type": "application/json" });
-                res.end(JSON.stringify(existingLink));
-            } catch (err) {
+                res.end(JSON.stringify(existingFeed));
+            } catch (err: any) {
                 res.writeHead(400, { "content-type": "application/json" });
-                res.end(JSON.stringify(err));
+                res.end(JSON.stringify(err.toString()));
             }
         });
     }
+    // Route: DELETE /feeds/{id}
+    else if (method === "DELETE" && url?.startsWith("/feeds/")) {
+        try {
+            const id = url.substring(url.lastIndexOf("/") + 1);
 
-    // Route: DELETE /links/{id}
+            const feedToDelete = data.find((feed) => feed.id === id);
+            if (!feedToDelete)
+                throw new Error("Couldn't find a feed with the given id");
+
+            data.splice(data.indexOf(feedToDelete), 1);
+
+            res.writeHead(204, { "content-type": "application/json" });
+            res.end(JSON.stringify("RSS Feed deleted successfully"));
+        } catch (err: any) {
+            res.writeHead(404, { "content-type": "application/json" });
+            res.end(JSON.stringify(err.toString()));
+        }
+    }
 });
 
 server.listen(PORT, HOST, () => {
