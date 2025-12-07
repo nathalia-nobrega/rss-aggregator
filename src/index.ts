@@ -47,6 +47,8 @@ const server = http.createServer((req, res) => {
     else if (method === "GET" && url?.startsWith("/feeds/")) {
         try {
             const id = url.substring(url.lastIndexOf("/") + 1);
+            if (id.length === 0)
+                throw new Error("Required parameter 'id' not found");
 
             const feedFound = data.find((feed) => feed.id === id);
 
@@ -86,40 +88,47 @@ const server = http.createServer((req, res) => {
     }
     // Route: PUT /feeds/{id}
     else if (method === "PUT" && url?.startsWith("/feeds/")) {
-        const id = url.substring(url.lastIndexOf("/") + 1);
+        try {
+            const id = url.substring(url.lastIndexOf("/") + 1);
+            if (id.length === 0)
+                throw new Error("Required parameter 'id' not found");
+            let body = "";
 
-        let body = "";
+            req.setEncoding("utf-8");
 
-        req.setEncoding("utf-8");
+            req.on("data", (chunk) => {
+                body += chunk.toString();
 
-        req.on("data", (chunk) => {
-            body += chunk.toString();
-        });
+                req.on("end", () => {
+                    // TODO: Throw an error if there is an existing feed with the same URL
+                    let existingFeed = data.find((feed) => feed.id === id);
 
-        req.on("end", () => {
-            try {
-                // TODO: Throw an error if there is an existing feed with the same URL
-                let existingFeed = data.find((feed) => feed.id === id);
+                    if (!existingFeed)
+                        throw new Error(
+                            "Couldn't find a feed with the given id"
+                        );
 
-                if (!existingFeed)
-                    throw new Error("Couldn't find a feed with the given id");
-
-                const updatedFeed: RSSData = JSON.parse(body);
-                existingFeed.author = updatedFeed.author;
-                existingFeed.title = updatedFeed.title;
-                existingFeed.url = updatedFeed.url;
-                res.writeHead(200, { "content-type": "application/json" });
-                res.end(JSON.stringify(existingFeed));
-            } catch (err: any) {
-                res.writeHead(400, { "content-type": "application/json" });
-                res.end(JSON.stringify(err.toString()));
-            }
-        });
+                    const updatedFeed: RSSData = JSON.parse(body);
+                    existingFeed.author = updatedFeed.author;
+                    existingFeed.title = updatedFeed.title;
+                    existingFeed.url = updatedFeed.url;
+                    res.writeHead(200, {
+                        "content-type": "application/json",
+                    });
+                    res.end(JSON.stringify(existingFeed));
+                });
+            });
+        } catch (err: any) {
+            res.writeHead(400, { "content-type": "application/json" });
+            res.end(JSON.stringify(err.toString()));
+        }
     }
     // Route: DELETE /feeds/{id}
     else if (method === "DELETE" && url?.startsWith("/feeds/")) {
         try {
             const id = url.substring(url.lastIndexOf("/") + 1);
+            if (id.length === 0)
+                throw new Error("Required parameter 'id' not found");
 
             const feedToDelete = data.find((feed) => feed.id === id);
             if (!feedToDelete)
