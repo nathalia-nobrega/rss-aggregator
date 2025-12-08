@@ -1,27 +1,28 @@
 import { randomUUID } from "crypto";
 import http from "http";
 
-// FIX: VALIDATE IF THE REQUIRED PARAMETERS AND BEING SENT
-
-type RSSData = {
+export type RSSFeedData = {
     id: string;
     title: string;
     author: string;
     url: string;
+    type: "URL" | "XML";
 };
 
-let data: Array<RSSData> = [
+let data: Array<RSSFeedData> = [
     {
         id: randomUUID(),
         title: "sizeof.cat",
         author: "Cool catalan guy",
         url: "https://sizeof.cat/index.xml",
+        type: "XML",
     },
     {
         id: randomUUID(),
         title: "Beej's Blog",
         author: "Beej",
         url: "https://beej.us/blog/rss.xml",
+        type: "XML",
     },
 ];
 
@@ -75,7 +76,7 @@ const server = http.createServer((req, res) => {
 
         req.on("end", () => {
             try {
-                const newFeed: RSSData = JSON.parse(body);
+                const newFeed: RSSFeedData = JSON.parse(body);
                 newFeed.id = randomUUID();
                 data.push(newFeed);
                 res.writeHead(201, { "content-type": "application/json" });
@@ -108,7 +109,7 @@ const server = http.createServer((req, res) => {
                             "Couldn't find a feed with the given id"
                         );
 
-                    const updatedFeed: RSSData = JSON.parse(body);
+                    const updatedFeed: RSSFeedData = JSON.parse(body);
                     existingFeed.author = updatedFeed.author;
                     existingFeed.title = updatedFeed.title;
                     existingFeed.url = updatedFeed.url;
