@@ -1,26 +1,19 @@
 import { randomUUID } from "crypto";
 import http from "http";
-
-export type RSSFeedData = {
-    id: string;
-    title: string;
-    author: string;
-    url: string;
-    type: "URL" | "XML";
-};
+import { RSSFeedData } from "./types/rss-feed-data.js";
 
 let data: Array<RSSFeedData> = [
     {
         id: randomUUID(),
         title: "sizeof.cat",
-        author: "Cool catalan guy",
+        description: "something",
         url: "https://sizeof.cat/index.xml",
         type: "XML",
     },
     {
         id: randomUUID(),
         title: "Beej's Blog",
-        author: "Beej",
+        description: "something",
         url: "https://beej.us/blog/rss.xml",
         type: "XML",
     },
@@ -76,7 +69,7 @@ const server = http.createServer((req, res) => {
 
         req.on("end", () => {
             try {
-                const newFeed: RSSFeedData = JSON.parse(body);
+                const newFeedLink: string  = JSON.parse(body);
                 newFeed.id = randomUUID();
                 data.push(newFeed);
                 res.writeHead(201, { "content-type": "application/json" });
