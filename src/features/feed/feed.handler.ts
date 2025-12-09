@@ -11,7 +11,7 @@ function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
         : null;
 }
 
-async function extractFeed(feedUrl: string): Promise<RSSFeedData> {
+export async function extractFeed(feedUrl: string): Promise<RSSFeedData> {
     const feedType = getTypeOfFeed(feedUrl);
     if (!feedType)
         throw new FeedTypeError(

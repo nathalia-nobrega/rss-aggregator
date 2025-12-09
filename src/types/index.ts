@@ -5,3 +5,7 @@ export type RSSFeedData = {
     url: string | undefined;
     // items: Array<RSSFeedItem>
 };
+
+export type RSSFeedCreateRequest = {
+    feedUrl: string;
+};

@@ -1,21 +1,14 @@
 import { randomUUID } from "crypto";
 import http from "http";
-import { RSSFeedData } from "./types/rss-feed-data.js";
+import { RSSFeedCreateRequest, RSSFeedData } from "./types/index.js";
+import { extractFeed } from "./features/feed/feed.handler.js";
 
 let data: Array<RSSFeedData> = [
-    {
-        id: randomUUID(),
-        title: "sizeof.cat",
-        description: "something",
-        url: "https://sizeof.cat/index.xml",
-        type: "XML",
-    },
     {
         id: randomUUID(),
         title: "Beej's Blog",
         description: "something",
         url: "https://beej.us/blog/rss.xml",
-        type: "XML",
     },
 ];
 
@@ -67,10 +60,12 @@ const server = http.createServer((req, res) => {
             body += chunk.toString();
         });
 
-        req.on("end", () => {
+        req.on("end", async () => {
             try {
-                const newFeedLink: string  = JSON.parse(body);
-                newFeed.id = randomUUID();
+                const newFeedLink: RSSFeedCreateRequest = JSON.parse(body);
+                const newFeed: RSSFeedData = await extractFeed(
+                    newFeedLink.feedUrl
+                );
                 data.push(newFeed);
                 res.writeHead(201, { "content-type": "application/json" });
                 res.end(JSON.stringify(newFeed));
@@ -103,7 +98,7 @@ const server = http.createServer((req, res) => {
                         );
 
                     const updatedFeed: RSSFeedData = JSON.parse(body);
-                    existingFeed.author = updatedFeed.author;
+                    // existingFeed.author = updatedFeed.author;
                     existingFeed.title = updatedFeed.title;
                     existingFeed.url = updatedFeed.url;
                     res.writeHead(200, {
