@@ -21,7 +21,7 @@ export const getAllFeedsHandler = async (
     res: ServerResponse
 ) => {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify("data"));
+    res.end(JSON.stringify(data));
 };
 
 export const addNewFeed = async (req: IncomingMessage, res: ServerResponse) => {

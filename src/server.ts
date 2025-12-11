@@ -1,9 +1,5 @@
-import { randomUUID } from "crypto";
 import http, { IncomingMessage, ServerResponse } from "http";
-import { RSSFeedCreateRequest, RSSFeedData } from "./types/index.js";
-import { extractFeed } from "./services/feed/feed.service.js";
 import { routes } from "./lib/router.js";
-import { URL } from "url";
 
 // SETUP
 const PORT = 8000;
@@ -30,11 +26,16 @@ const server = http.createServer(
                         "The target resource doesn't support this method"
                     )
                 );
+                return;
             }
             // handle if URL isn't present
             res.writeHead(404, { "content-type": "application/json" });
             res.end(JSON.stringify("Cannot find the requested resource"));
+            return;
         }
+
+        // handle the request
+        route.handler(req, res);
     }
 );
 
