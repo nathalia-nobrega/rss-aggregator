@@ -17,9 +17,24 @@ const server = http.createServer(
             return;
         }
 
-        const corresponding = routes.find(
+        const route = routes.find(
             (rt) => rt.method === method && rt.regex.test(url)
         );
+
+        // handle if URL is present but method is wrong
+        if (!route) {
+            if (routes.find((rt) => rt.regex.test(url))) {
+                res.writeHead(405, { "content-type": "application/json" });
+                res.end(
+                    JSON.stringify(
+                        "The target resource doesn't support this method"
+                    )
+                );
+            }
+            // handle if URL isn't present
+            res.writeHead(404, { "content-type": "application/json" });
+            res.end(JSON.stringify("Cannot find the requested resource"));
+        }
     }
 );
 
