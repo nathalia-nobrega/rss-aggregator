@@ -1,15 +1,16 @@
 import http, { IncomingMessage, ServerResponse } from "http";
 import { routes } from "./lib/router.js";
+import { Params, RouterIncomingMessage } from "./types/types.js";
 
 // SETUP
 const PORT = 8000;
 const HOST = "localhost";
-
 const server = http.createServer(
     (req: IncomingMessage, res: ServerResponse) => {
         const { url, method } = req;
 
         if (!url || !method) {
+            res.writeHead(400).end(JSON.stringify("Bad Request"));
             return;
         }
 
@@ -35,7 +36,19 @@ const server = http.createServer(
         }
 
         // handle the request
-        route.handler(req, res);
+        const match = route.regex.exec(url);
+
+        const paramValues = match!.slice(1);
+        const params: Params = {};
+
+        route.pathParams.forEach((key, index) => {
+            // the keys and values arrays should match in the order
+            // e.g params['id'] = paramValues['123-24-afda-c']
+            params[key] = paramValues[index]!;
+        });
+        const parsedReq = req as RouterIncomingMessage;
+        parsedReq.params = params;
+        route.handler(parsedReq, res);
     }
 );
 

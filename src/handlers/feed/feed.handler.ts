@@ -1,5 +1,9 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { RSSFeedCreateRequest, RSSFeedData } from "../../types/index.js";
+import {
+    RouterIncomingMessage,
+    RSSFeedCreateRequest,
+    RSSFeedData,
+} from "../../types/types.js";
 import { randomUUID } from "crypto";
 import { extractFeed } from "../../services/feed/feed.service.js";
 
@@ -9,6 +13,8 @@ let data: Array<RSSFeedData> = [
         title: "Beej's Blog",
         description: "something",
         url: "https://beej.us/blog/rss.xml",
+        status: "active",
+        priority: "high",
     },
 ];
 
@@ -48,14 +54,14 @@ export const addNewFeed = async (req: IncomingMessage, res: ServerResponse) => {
 };
 
 export const getFeedById = async (
-    req: IncomingMessage,
+    req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
     const { url } = req;
 
     try {
-        const id = url?.substring(url.lastIndexOf("/") + 1);
-        if (id?.length === 0)
+        const id = req.params["id"];
+        if (id === undefined)
             throw new Error("Required parameter 'id' not found");
 
         const feedFound = data.find((feed) => feed.id === id);
@@ -72,11 +78,14 @@ export const getFeedById = async (
     }
 };
 
-export const updateFeed = async (req: IncomingMessage, res: ServerResponse) => {
+export const updateFeed = async (
+    req: RouterIncomingMessage,
+    res: ServerResponse
+) => {
     const { url } = req;
     try {
-        const id = url?.substring(url.lastIndexOf("/") + 1);
-        if (id?.length === 0)
+        const id = req.params["id"];
+        if (id === undefined)
             throw new Error("Required parameter 'id' not found");
         let body = "";
 
@@ -108,12 +117,15 @@ export const updateFeed = async (req: IncomingMessage, res: ServerResponse) => {
     }
 };
 
-export const deleteFeed = async (req: IncomingMessage, res: ServerResponse) => {
+export const deleteFeed = async (
+    req: RouterIncomingMessage,
+    res: ServerResponse
+) => {
     const { url } = req;
 
     try {
-        const id = url?.substring(url.lastIndexOf("/") + 1);
-        if (id?.length === 0)
+        const id = req.params["id"];
+        if (id === undefined)
             throw new Error("Required parameter 'id' not found");
 
         const feedToDelete = data.find((feed) => feed.id === id);
