@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
 import { extractFeed } from "../../services/feed/feed.service.js";
 import {
+    isFeedPriority,
+    isFeedStatus,
     RouterIncomingMessage,
     RSSFeedCreateRequest,
     RSSFeedData,
@@ -111,10 +113,18 @@ export const updateFeed = async (
                 // if json.parse throwns => send malformed body error
                 const feedUpdateData: UpdateFeedRequest = JSON.parse(body);
 
-                if (feedUpdateData.feedStatus !== undefined)
+                // Something very useful that I learned here:
+                // Type assertions remove safety, they do not add it.
+                if (
+                    feedUpdateData.feedStatus !== undefined &&
+                    isFeedStatus(feedUpdateData.feedStatus)
+                )
                     existingFeed.status = feedUpdateData.feedStatus;
 
-                if (feedUpdateData.feedPriority !== undefined)
+                if (
+                    feedUpdateData.feedPriority !== undefined &&
+                    isFeedPriority(feedUpdateData.feedPriority)
+                )
                     existingFeed.priority = feedUpdateData.feedPriority;
 
                 if (feedUpdateData.feedTitle !== undefined)

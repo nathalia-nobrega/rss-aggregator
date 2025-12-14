@@ -31,3 +31,21 @@ export type UpdateFeedRequest = {
     feedPriority: FeedPriority;
     feedTitle: string;
 };
+
+// type guard -> runtime code
+
+export const FEED_STATUSES = ["active", "paused"] as const;
+export const FEED_PRIORITIES = ["high", "medium", "low"] as const;
+
+export function isFeedStatus(value: unknown): value is FeedStatus {
+    return (
+        typeof value === "string" && FEED_STATUSES.includes(value as FeedStatus)
+    );
+}
+
+export function isFeedPriority(value: unknown): value is FeedPriority {
+    return (
+        typeof value === "string" &&
+        FEED_PRIORITIES.includes(value as FeedPriority)
+    );
+}
