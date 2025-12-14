@@ -1,11 +1,12 @@
+import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
+import { extractFeed } from "../../services/feed/feed.service.js";
 import {
     RouterIncomingMessage,
     RSSFeedCreateRequest,
     RSSFeedData,
+    UpdateFeedRequest,
 } from "../../types/types.js";
-import { randomUUID } from "crypto";
-import { extractFeed } from "../../services/feed/feed.service.js";
 
 let data: Array<RSSFeedData> = [
     {
@@ -77,16 +78,28 @@ export const getFeedById = async (
         res.end(JSON.stringify(err.toString()));
     }
 };
-
+// problem 1: request body not being sent
 export const updateFeed = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    const { url } = req;
     try {
         const id = req.params["id"];
-        if (id === undefined)
-            throw new Error("Required parameter 'id' not found");
+
+        if (id === undefined) {
+            res.writeHead(400).end("Required parameter 'id' not found");
+            return;
+        }
+
+        let existingFeed = data.find((feed) => feed.id === id);
+
+        if (!existingFeed) {
+            res.writeHead(404, { "content-type": "application/json" }).end(
+                JSON.stringify("Couldn't find a feed with the given id")
+            );
+            return;
+        }
+
         let body = "";
 
         req.setEncoding("utf-8");
@@ -95,25 +108,32 @@ export const updateFeed = async (
             body += chunk.toString();
 
             req.on("end", () => {
-                // TODO: Throw an error if there is an existing feed with the same URL
-                let existingFeed = data.find((feed) => feed.id === id);
+                // if json.parse throwns => send malformed body error
+                const feedUpdateData: UpdateFeedRequest = JSON.parse(body);
 
-                if (!existingFeed)
-                    throw new Error("Couldn't find a feed with the given id");
+                if (feedUpdateData.feedStatus !== undefined)
+                    existingFeed.status = feedUpdateData.feedStatus;
 
-                const updatedFeed: RSSFeedData = JSON.parse(body);
-                // existingFeed.author = updatedFeed.author;
-                existingFeed.title = updatedFeed.title;
-                // existingFeed.url = updatedFeed.url;
+                if (feedUpdateData.feedPriority !== undefined)
+                    existingFeed.priority = feedUpdateData.feedPriority;
+
+                if (feedUpdateData.feedTitle !== undefined)
+                    existingFeed.title = feedUpdateData.feedTitle;
+
                 res.writeHead(200, {
                     "content-type": "application/json",
                 });
                 res.end(JSON.stringify(existingFeed));
             });
+            return;
         });
+        // body wasn't sent
+        // res.writeHead(400).end(JSON.stringify("Expected a request body."));
     } catch (err: any) {
         res.writeHead(400, { "content-type": "application/json" });
-        res.end(JSON.stringify(err.toString()));
+        res.end(
+            JSON.stringify("Invalid JSON: request body could not be parsed.")
+        );
     }
 };
 
