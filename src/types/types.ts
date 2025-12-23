@@ -23,6 +23,11 @@ export type RegisterUserRequest = {
     password: string;
 };
 
+export type LoginRequest = {
+    email: string;
+    password: string;
+};
+
 export type FeedStatus = "active" | "paused";
 
 export type FeedPriority = "high" | "medium" | "low";

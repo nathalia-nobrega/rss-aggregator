@@ -2,8 +2,10 @@ import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
 import {
+    generateAccessToken,
     isValidEmail,
     JSON_CONTENT_TYPE,
+    LoginRequest,
     RegisterUserRequest,
     User,
 } from "../../types/types.js";
@@ -86,11 +88,52 @@ export const registerUser = async (
     });
 };
 
+// TODO: Implement rate limiting
 export const login = async (req: IncomingMessage, res: ServerResponse) => {
-    // TODO: validate body => 400 br
-    // TODO: validate if email exists => 401 unauthorized
-    // TODO: test password against stored hash => 404 unauthorized
-    //
-    // Generate JWT token
-    // return sucessfully
+    // TODO: Read body => make this a reusable think throughout all endpoints
+    let body = "";
+
+    req.on("data", (chunk) => {
+        body += chunk.toString();
+    });
+
+    req.on("end", async () => {
+        // TODO: make this a reusable think throughout all endpoints
+        if (body.length === 0) {
+            // body wasn't sent
+            res.writeHead(400).end(JSON.stringify("Expected a request body."));
+            return;
+        }
+
+        const loginPayload: LoginRequest = JSON.parse(body);
+
+        const existingUserWithEmail = userTable.find(
+            (usr) => usr.email === loginPayload.email
+        );
+        if (!existingUserWithEmail) {
+            res.writeHead(401, JSON_CONTENT_TYPE);
+            res.end(JSON.stringify("Invalid credentials"));
+            return;
+        }
+
+        const isMatch = await bcrypt.compare(
+            loginPayload.password,
+            existingUserWithEmail.password
+        );
+
+        if (!isMatch) {
+            res.writeHead(401, JSON_CONTENT_TYPE);
+            res.end(JSON.stringify("Invalid credentials"));
+            return;
+        }
+
+        const token = generateAccessToken(existingUserWithEmail);
+        res.writeHead(200, JSON_CONTENT_TYPE);
+        res.end(
+            JSON.stringify({
+                message: "Successful login",
+                token,
+            })
+        );
+    });
 };
