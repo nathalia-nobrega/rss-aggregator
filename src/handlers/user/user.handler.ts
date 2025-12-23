@@ -1,14 +1,14 @@
 import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
+import { JSON_CONTENT_TYPE } from "../../constants/http.js";
+import { User } from "../../types/user/models.js";
 import {
-    generateAccessToken,
-    isValidEmail,
-    JSON_CONTENT_TYPE,
-    LoginRequest,
     RegisterUserRequest,
-    User,
-} from "../../types/types.js";
+    LoginRequest,
+} from "../../types/user/requests.js";
+import { isValidEmail } from "../../types/user/validators.js";
+import { generateAccessToken } from "../../utilities/jwt.js";
 
 let userTable: Array<User> = [
     {

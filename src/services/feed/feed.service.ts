@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { FeedTypeError } from "../../errors/FeedTypeError.js";
-import { ExtractedFeedData, RSSFeedData } from "../../types/types.js";
 import Parser from "rss-parser";
+import { ExtractedFeedData } from "../../types/feed/models.js";
 
 function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
     return feedUrl.endsWith(".rss")

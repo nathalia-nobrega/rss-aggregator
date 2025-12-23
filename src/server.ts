@@ -2,11 +2,8 @@ import dotenv from "dotenv";
 import http, { IncomingMessage, ServerResponse } from "http";
 import path from "path";
 import { routes } from "./lib/router.js";
-import {
-    JSON_CONTENT_TYPE,
-    Params,
-    RouterIncomingMessage,
-} from "./types/types.js";
+import { JSON_CONTENT_TYPE } from "./constants/http.js";
+import { Params, RouterIncomingMessage } from "./types/http.js";
 
 // SETUP
 dotenv.config();

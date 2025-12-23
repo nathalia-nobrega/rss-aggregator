@@ -6,8 +6,9 @@ import {
     updateFeed,
 } from "../handlers/feed/feed.handler.js";
 import { login, registerUser } from "../handlers/user/user.handler.js";
+import { withAuth } from "../middlewares/auth.js";
+import { withRateLimit } from "../middlewares/rate-limit.js";
 import { Handler, Method, Route } from "../routes.js";
-import { withAuth, withRateLimit } from "../types/types.js";
 
 export const routes: Route[] = [];
 

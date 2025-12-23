@@ -1,17 +1,19 @@
 import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
 import { extractFeed } from "../../services/feed/feed.service.js";
+import { JSON_CONTENT_TYPE } from "../../constants/http.js";
+import { RSSFeedData } from "../../types/feed/models.js";
 import {
-    isFeedPriority,
-    isFeedStatus,
-    isValidFeedUrl,
-    isValidIdParam,
-    RouterIncomingMessage,
-    JSON_CONTENT_TYPE,
     RSSFeedCreateRequest,
-    RSSFeedData,
     UpdateFeedRequest,
-} from "../../types/types.js";
+} from "../../types/feed/requests.js";
+import {
+    isValidFeedUrl,
+    isFeedStatus,
+    isFeedPriority,
+} from "../../types/feed/validators.js";
+import { RouterIncomingMessage } from "../../types/http.js";
+import { isValidIdParam } from "../../utilities/validators.js";
 
 let data: Array<RSSFeedData> = [
     {
