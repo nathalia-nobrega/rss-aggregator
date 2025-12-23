@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { FeedTypeError } from "../../errors/FeedTypeError.js";
-import { RSSFeedData } from "../../types/types.js";
+import { ExtractedFeedData, RSSFeedData } from "../../types/types.js";
 import Parser from "rss-parser";
 
 function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
@@ -11,7 +11,7 @@ function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
         : null;
 }
 
-export async function extractFeed(feedUrl: string): Promise<RSSFeedData> {
+export async function extractFeed(feedUrl: string): Promise<ExtractedFeedData> {
     const feedType = getTypeOfFeed(feedUrl);
     if (!feedType)
         throw new FeedTypeError(
@@ -19,10 +19,9 @@ export async function extractFeed(feedUrl: string): Promise<RSSFeedData> {
         );
     const feed = await parseFeed(feedUrl, feedType);
     return {
-        id: randomUUID(),
-        description: feed.description,
-        title: feed.title,
-        url: feed.link,
+        description: feed.description || "No description found",
+        title: feed.title || "Untitled Feed",
+        url: feed.feedUrl || "No URL found",
     };
 }
 

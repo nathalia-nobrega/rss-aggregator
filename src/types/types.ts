@@ -1,22 +1,16 @@
-import { IncomingMessage } from "http";
+import { IncomingMessage, OutgoingHttpHeaders } from "http";
 
 // TODO: Understand and find a better folder structure for these types
 
-type Params = Record<string, string>;
+export type Params = Record<string, string>;
+
+export const JSON_CONTENT_TYPE: Partial<OutgoingHttpHeaders> = {
+    "content-type": "application/json",
+};
 
 export interface RouterIncomingMessage extends IncomingMessage {
     params: Params;
 }
-
-export type RSSFeedData = {
-    id: string;
-    title: string | undefined;
-    description: string | undefined;
-    url: string | undefined;
-    status: FeedStatus;
-    priority: FeedPriority;
-    // items: Array<RSSFeedItem>
-};
 
 export type RSSFeedCreateRequest = {
     feedUrl: string;
@@ -49,3 +43,29 @@ export function isFeedPriority(value: unknown): value is FeedPriority {
         FEED_PRIORITIES.includes(value as FeedPriority)
     );
 }
+
+export function isValidIdParam(id: string) {
+    const uuidPattern =
+        /^[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$/gm;
+    return uuidPattern.test(id);
+}
+
+export function isValidFeedUrl(url: string) {
+    const feedUrlPattern = /https?:\/\/[^\/]+\/.*?\.(rss|xml)(\?.*)?$/i;
+    return feedUrlPattern.test(url);
+}
+
+// Data that comes from RSS parser library (partial)
+export type ExtractedFeedData = {
+    title: string;
+    description: string;
+    url: string;
+};
+
+// Data that the parser extracts + my domain fields
+export type RSSFeedData = ExtractedFeedData & {
+    id: string;
+    status: FeedStatus;
+    priority: FeedPriority;
+    // items: Array<RSSFeedItem>
+};

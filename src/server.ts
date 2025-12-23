@@ -1,6 +1,10 @@
 import http, { IncomingMessage, ServerResponse } from "http";
 import { routes } from "./lib/router.js";
-import { Params, RouterIncomingMessage } from "./types/types.js";
+import {
+    JSON_CONTENT_TYPE,
+    Params,
+    RouterIncomingMessage,
+} from "./types/types.js";
 
 // SETUP
 const PORT = 8000;
@@ -21,7 +25,7 @@ const server = http.createServer(
         // handle if URL is present but method is wrong
         if (!route) {
             if (routes.find((rt) => rt.regex.test(url))) {
-                res.writeHead(405, { "content-type": "application/json" });
+                res.writeHead(405, JSON_CONTENT_TYPE);
                 res.end(
                     JSON.stringify(
                         "The target resource doesn't support this method"
@@ -30,7 +34,7 @@ const server = http.createServer(
                 return;
             }
             // handle if URL isn't present
-            res.writeHead(404, { "content-type": "application/json" });
+            res.writeHead(404, JSON_CONTENT_TYPE);
             res.end(JSON.stringify("Cannot find the requested resource"));
             return;
         }
