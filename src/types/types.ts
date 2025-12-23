@@ -1,5 +1,6 @@
-import { IncomingMessage, OutgoingHttpHeaders } from "http";
+import { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from "http";
 import jsonwebtoken from "jsonwebtoken";
+import { Handler } from "../routes.js";
 
 // TODO: Understand and find a better folder structure for these types
 
@@ -11,6 +12,7 @@ export const JSON_CONTENT_TYPE: Partial<OutgoingHttpHeaders> = {
 
 export interface RouterIncomingMessage extends IncomingMessage {
     params: Params;
+    userId?: string;
 }
 
 export type RSSFeedCreateRequest = {
@@ -109,7 +111,7 @@ export function isValidEmail(email: string) {
 // Generate JWT token
 export function generateAccessToken(user: User) {
     const accessTokenPayload = {
-        id: user.id,
+        userId: user.id,
         email: user.email,
     };
 
@@ -119,6 +121,59 @@ export function generateAccessToken(user: User) {
     });
 }
 
-// TODO: Authentication middleware
+/**
+ * Extracts JWT token from Authorization header
+ */
+function extractToken(req: RouterIncomingMessage): string | null {
+    const token = req.headers["authorization"];
+    if (!token) {
+        return null;
+    }
+
+    if (token.startsWith("Bearer ")) {
+        return token.substring(7);
+    }
+
+    return token;
+}
+
+//  Authentication middleware
+export const withAuth = (handler: Handler): Handler => {
+    return (req: RouterIncomingMessage, res: ServerResponse) => {
+        const accessSecret = process.env.JWT_SECRET || "super_secret";
+
+        const token = extractToken(req);
+        if (token == null) {
+            res.writeHead(401, JSON_CONTENT_TYPE);
+            res.end(
+                JSON.stringify({
+                    error: "Missing or malformed Authorization header",
+                })
+            );
+            return;
+        }
+        try {
+            const decoded = jsonwebtoken.verify(token, accessSecret) as {
+                userId: string;
+            };
+            req.userId = decoded.userId;
+
+            // proceed to the actual handler
+            return handler(req, res);
+        } catch (err: any) {
+            res.writeHead(403, JSON_CONTENT_TYPE);
+
+            if (err instanceof jsonwebtoken.TokenExpiredError) {
+                res.end(JSON.stringify({ error: "Token expired" }));
+            } else if (err instanceof jsonwebtoken.JsonWebTokenError) {
+                res.end(JSON.stringify({ error: "Invalid token" }));
+            }
+
+            return;
+        }
+    };
+};
 
 // TODO: Implement refresh token
+
+// TODO: Implement rate limiting

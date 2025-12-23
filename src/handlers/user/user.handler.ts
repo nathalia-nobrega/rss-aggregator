@@ -88,7 +88,6 @@ export const registerUser = async (
     });
 };
 
-// TODO: Implement rate limiting
 export const login = async (req: IncomingMessage, res: ServerResponse) => {
     // TODO: Read body => make this a reusable think throughout all endpoints
     let body = "";

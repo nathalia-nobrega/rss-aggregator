@@ -28,8 +28,8 @@ let data: Array<RSSFeedData> = [
 // I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
 // But for now I believe this is an okay thing to do.
 
-export const getAllFeedsHandler = async (
-    req: IncomingMessage,
+export const getAllFeeds = async (
+    req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
     res.writeHead(200, JSON_CONTENT_TYPE);
