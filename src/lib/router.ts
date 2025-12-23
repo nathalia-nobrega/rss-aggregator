@@ -5,6 +5,7 @@ import {
     getFeedById,
     updateFeed,
 } from "../handlers/feed/feed.handler.js";
+import { registerUser } from "../handlers/user/user.handler.js";
 import { Handler, Method, Route } from "../routes.js";
 
 export const routes: Route[] = [];
@@ -56,3 +57,5 @@ addRoute("POST", "/feeds", addNewFeed);
 addRoute("GET", "/feeds/:id", getFeedById);
 addRoute("PUT", "/feeds/:id", updateFeed);
 addRoute("DELETE", "/feeds/:id", deleteFeed);
+
+addRoute("POST", "/users", registerUser);

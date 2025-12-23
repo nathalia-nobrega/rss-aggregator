@@ -1,4 +1,6 @@
+import dotenv from "dotenv";
 import http, { IncomingMessage, ServerResponse } from "http";
+import path from "path";
 import { routes } from "./lib/router.js";
 import {
     JSON_CONTENT_TYPE,
@@ -7,7 +9,9 @@ import {
 } from "./types/types.js";
 
 // SETUP
-const PORT = 8000;
+dotenv.config();
+
+const PORT = Number(process.env.PORT) | 8000;
 const HOST = "localhost";
 const server = http.createServer(
     (req: IncomingMessage, res: ServerResponse) => {

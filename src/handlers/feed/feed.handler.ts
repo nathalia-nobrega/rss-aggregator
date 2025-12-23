@@ -2,13 +2,12 @@ import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
 import { extractFeed } from "../../services/feed/feed.service.js";
 import {
-    ExtractedFeedData,
     isFeedPriority,
     isFeedStatus,
     isValidFeedUrl,
     isValidIdParam,
-    JSON_CONTENT_TYPE,
     RouterIncomingMessage,
+    JSON_CONTENT_TYPE,
     RSSFeedCreateRequest,
     RSSFeedData,
     UpdateFeedRequest,
