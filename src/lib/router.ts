@@ -7,7 +7,7 @@ import {
 } from "../handlers/feed/feed.handler.js";
 import { login, registerUser } from "../handlers/user/user.handler.js";
 import { Handler, Method, Route } from "../routes.js";
-import { withAuth } from "../types/types.js";
+import { withAuth, withRateLimit } from "../types/types.js";
 
 export const routes: Route[] = [];
 
@@ -53,11 +53,11 @@ export const addRoute = (method: Method, pattern: string, handler: Handler) => {
 };
 
 // Definitions
-addRoute("GET", "/feeds", withAuth(getAllFeeds));
-addRoute("POST", "/feeds", withAuth(addNewFeed));
-addRoute("GET", "/feeds/:id", withAuth(getFeedById));
-addRoute("PUT", "/feeds/:id", withAuth(updateFeed));
-addRoute("DELETE", "/feeds/:id", withAuth(deleteFeed));
+addRoute("GET", "/feeds", withRateLimit(withAuth(getAllFeeds)));
+addRoute("POST", "/feeds", withRateLimit(withAuth(addNewFeed)));
+addRoute("GET", "/feeds/:id", withRateLimit(withAuth(getFeedById)));
+addRoute("PUT", "/feeds/:id", withRateLimit(withAuth(updateFeed)));
+addRoute("DELETE", "/feeds/:id", withRateLimit(withAuth(deleteFeed)));
 
-addRoute("POST", "/auth/register", registerUser);
-addRoute("POST", "/auth/login", login);
+addRoute("POST", "/auth/register", withRateLimit(registerUser));
+addRoute("POST", "/auth/login", withRateLimit(login));

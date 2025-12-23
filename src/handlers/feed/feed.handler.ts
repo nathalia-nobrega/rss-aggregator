@@ -36,7 +36,10 @@ export const getAllFeeds = async (
     res.end(JSON.stringify(data));
 };
 
-export const addNewFeed = async (req: IncomingMessage, res: ServerResponse) => {
+export const addNewFeed = async (
+    req: RouterIncomingMessage,
+    res: ServerResponse
+) => {
     let body = "";
 
     req.setEncoding("utf-8");
