@@ -4,6 +4,7 @@ import { RouterIncomingMessage } from "../types/http.js";
 
 const WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 10;
+// Keeping the rate limiting simple! I know the standard is to use something like Redis
 const ipCache = new Map<string, { count: number; resetTime: number }>();
 
 export const withRateLimit = (handler: Handler): Handler => {

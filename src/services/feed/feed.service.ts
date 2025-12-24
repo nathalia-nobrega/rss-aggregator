@@ -1,6 +1,5 @@
-import { randomUUID } from "crypto";
-import { FeedTypeError } from "../../errors/FeedTypeError.js";
 import Parser from "rss-parser";
+import { FeedTypeError } from "../../errors/FeedTypeError.js";
 import { ExtractedFeedData } from "../../types/feed/models.js";
 
 function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
@@ -25,6 +24,14 @@ export async function extractFeed(feedUrl: string): Promise<ExtractedFeedData> {
     };
 }
 
+/**
+ * VERY IMPORTANT NOTE:
+ * The rss-parser library changes the URL of XML feeds.
+ * If I pass https://beej.us/blog/rss.xml,
+ * the library parses it and gives me http://beej.us/blog/rss.xml,
+ * changing the HTTPS to HTTP.
+ *
+ */
 export async function parseFeed(feedUrl: string, feedType: "XML" | "URL") {
     let parser = new Parser();
     if (feedType === "XML") {

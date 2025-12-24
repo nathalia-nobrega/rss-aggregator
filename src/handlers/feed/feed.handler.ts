@@ -1,30 +1,26 @@
 import { randomUUID } from "crypto";
-import { IncomingMessage, ServerResponse } from "http";
-import { extractFeed } from "../../services/feed/feed.service.js";
+import { ServerResponse } from "http";
 import { JSON_CONTENT_TYPE } from "../../constants/http.js";
+import { InvalidJsonFormat } from "../../errors/InvalidJsonFormat.js";
+import { MissingRequestBody } from "../../errors/MissingRequestBody.js";
+import { extractFeed } from "../../services/feed/feed.service.js";
 import { RSSFeedData } from "../../types/feed/models.js";
 import {
     RSSFeedCreateRequest,
     UpdateFeedRequest,
 } from "../../types/feed/requests.js";
 import {
-    isValidFeedUrl,
-    isFeedStatus,
     isFeedPriority,
+    isFeedStatus,
+    isValidFeedUrl,
+    normalizeUrl,
 } from "../../types/feed/validators.js";
 import { RouterIncomingMessage } from "../../types/http.js";
+import { readJSON } from "../../utilities/request.js";
+import { sendError } from "../../utilities/response.js";
 import { isValidIdParam } from "../../utilities/validators.js";
 
-let data: Array<RSSFeedData> = [
-    {
-        id: randomUUID(),
-        title: "Beej's Blog",
-        description: "something",
-        url: "https://beej.us/blog/rss.xml",
-        status: "active",
-        priority: "high",
-    },
-];
+let feedTable: Array<RSSFeedData> = [];
 
 // Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
 // I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
@@ -35,83 +31,58 @@ export const getAllFeeds = async (
     res: ServerResponse
 ) => {
     res.writeHead(200, JSON_CONTENT_TYPE);
-    res.end(JSON.stringify(data));
+    res.end(JSON.stringify(feedTable));
 };
 
 export const addNewFeed = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    let body = "";
+    try {
+        const requestData = await readJSON<RSSFeedCreateRequest>(req);
 
-    req.setEncoding("utf-8");
-
-    req.on("data", (chunk) => {
-        // this event fires asynchronously for each chunk
-        body += chunk.toString();
-    });
-
-    req.on("end", async () => {
-        // i learned something here:
-        // this if statement was written before this 'end' event,
-        // which means that it got executed immediately,
-        // and the condition would've always been true
-        // because the 'data' event runs in asynchronous mode
-        // so this error would always happen regardless of any body being sent
-        if (body.length === 0) {
-            // body wasn't sent
-            res.writeHead(400).end(JSON.stringify("Expected a request body."));
+        if (!isValidFeedUrl(requestData.feedUrl)) {
+            sendError(
+                res,
+                400,
+                "Invalid feed URL format. Expected .xml or .rss extension"
+            );
             return;
         }
 
-        try {
-            const newFeedLink: RSSFeedCreateRequest = JSON.parse(body);
-
-            if (!isValidFeedUrl(newFeedLink.feedUrl)) {
-                res.writeHead(400, JSON_CONTENT_TYPE);
-                res.end(
-                    JSON.stringify(
-                        "Invalid feed URL format. Expected .xml or .rss extension"
-                    )
-                );
-
-                return;
-            }
-            // The system must prevent a user from adding the exact same Feed URL twice.
-            // If the feed already exists for this user_id, return 409 Conflict.
-            const existingFeed = data.find(
-                (feed) => feed.url === newFeedLink.feedUrl
+        const existingFeed = feedTable.find(
+            (feed) =>
+                normalizeUrl(feed.url) === normalizeUrl(requestData.feedUrl)
+        );
+        if (existingFeed) {
+            sendError(
+                res,
+                409,
+                "Feed with given URL already exists for this user"
             );
-            if (existingFeed) {
-                res.writeHead(409, JSON_CONTENT_TYPE);
-                res.end(
-                    JSON.stringify(
-                        "Error: feed with given URL already exists for this user"
-                    )
-                );
-
-                return;
-            }
-            const extractedData = await extractFeed(newFeedLink.feedUrl);
-
-            const newFeed: RSSFeedData = {
-                id: randomUUID(),
-                ...extractedData,
-                priority: "high",
-                status: "active",
-            };
-            data.push(newFeed);
-            res.writeHead(201, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify(newFeed));
-        } catch (err: any) {
-            res.writeHead(400, JSON_CONTENT_TYPE);
-            res.end(
-                JSON.stringify(
-                    "Error reading the request body: " + err.toString()
-                )
-            );
+            return;
         }
-    });
+        const extractedData = await extractFeed(requestData.feedUrl);
+        const newFeed: RSSFeedData = {
+            id: randomUUID(),
+            ...extractedData,
+            priority: "high",
+            status: "active",
+        };
+
+        feedTable.push(newFeed);
+        res.writeHead(201, JSON_CONTENT_TYPE);
+        res.end(JSON.stringify(newFeed));
+    } catch (err: any) {
+        if (err instanceof InvalidJsonFormat) {
+            return sendError(res, 400, err.message);
+        }
+        if (err instanceof MissingRequestBody) {
+            return sendError(res, 400, err.message);
+        }
+
+        return sendError(res, 400, err.message);
+    }
 };
 
 export const getFeedById = async (
@@ -127,7 +98,7 @@ export const getFeedById = async (
         );
     }
 
-    const feedFound = data.find((feed) => feed.id === id);
+    const feedFound = feedTable.find((feed) => feed.id === id);
 
     if (!feedFound) {
         res.writeHead(404, JSON_CONTENT_TYPE);
@@ -151,7 +122,7 @@ export const updateFeed = async (
             return;
         }
 
-        let existingFeed = data.find((feed) => feed.id === id);
+        let existingFeed = feedTable.find((feed) => feed.id === id);
 
         if (!existingFeed) {
             res.writeHead(404, JSON_CONTENT_TYPE).end(
@@ -221,11 +192,11 @@ export const deleteFeed = async (
         if (id === undefined)
             throw new Error("Required parameter 'id' not found");
 
-        const feedToDelete = data.find((feed) => feed.id === id);
+        const feedToDelete = feedTable.find((feed) => feed.id === id);
         if (!feedToDelete)
             throw new Error("Couldn't find a feed with the given id");
 
-        data.splice(data.indexOf(feedToDelete), 1);
+        feedTable.splice(feedTable.indexOf(feedToDelete), 1);
 
         res.writeHead(204, JSON_CONTENT_TYPE);
         res.end(JSON.stringify("RSS Feed deleted successfully"));

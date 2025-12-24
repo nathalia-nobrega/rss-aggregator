@@ -1,5 +1,6 @@
 // type guard -> runtime code
 
+import { NOMEM } from "dns";
 import {
     FEED_PRIORITIES,
     FEED_STATUSES,
@@ -32,4 +33,9 @@ export function isFeedPriority(value: unknown): value is FeedPriority {
 export function isValidFeedUrl(url: string) {
     const feedUrlPattern = /https?:\/\/[^\/]+\/.*?\.(rss|xml)(\?.*)?$/i;
     return feedUrlPattern.test(url);
+}
+
+export function normalizeUrl(url: string): string {
+    const u = new URL(url);
+    return `${u.hostname}${u.pathname}`;
 }
