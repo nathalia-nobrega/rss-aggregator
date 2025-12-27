@@ -1,14 +1,22 @@
 import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { IncomingMessage, ServerResponse } from "http";
-import { JSON_CONTENT_TYPE } from "../../constants/http.js";
+import { InvalidJsonFormat } from "../../errors/InvalidJsonFormat.js";
+import { MissingRequestBody } from "../../errors/MissingRequestBody.js";
 import { User } from "../../types/user/models.js";
 import {
-    RegisterUserRequest,
     LoginRequest,
+    RegisterUserRequest,
 } from "../../types/user/requests.js";
 import { isValidEmail } from "../../types/user/validators.js";
 import { generateAccessToken } from "../../utilities/jwt.js";
+import { readJSON } from "../../utilities/request.js";
+import {
+    sendBadRequestResponse,
+    sendConflictResponse,
+    sendCreatedResponse,
+    sendSuccessResponse,
+} from "../../utilities/response.js";
 
 let userTable: Array<User> = [
     {
@@ -24,95 +32,59 @@ export const registerUser = async (
     req: IncomingMessage,
     res: ServerResponse
 ) => {
-    let body = "";
-
-    req.on("data", (chunk) => {
-        body += chunk.toString();
-    });
-
-    // TODO: rewrite every req.on('end') handler,
-    // this makes code harder to maintain
-    // makes testing individual pieces harder
-    // and error handling scattered across callbacks
-    req.on("end", async () => {
-        // TODO: Find a way to reuse this error handling across all endpoints
-        if (body.length === 0) {
-            // body wasn't sent
-            res.writeHead(400).end(JSON.stringify("Expected a request body."));
-            return;
+    const registerPayload = await readJSON<RegisterUserRequest>(req);
+    // this validation could go to a validation middleware maybe?
+    // think about this one
+    try {
+        if (
+            registerPayload.email === undefined ||
+            !isValidEmail(registerPayload.email)
+        ) {
+            return sendBadRequestResponse(res, "The given e-mail is not valid");
         }
-        try {
-            // Validation
-            const registerPayload: RegisterUserRequest = JSON.parse(body);
-            if (
-                registerPayload.email === undefined ||
-                !isValidEmail(registerPayload.email)
-            ) {
-                res.writeHead(400, JSON_CONTENT_TYPE);
-                res.end(JSON.stringify("The given email is invalid."));
-                return;
-            }
-            const existingUserWithEmail = userTable.find(
-                (user) => user.email === registerPayload.email
-            );
-            if (existingUserWithEmail) {
-                res.writeHead(409, JSON_CONTENT_TYPE);
-                res.end(JSON.stringify("Email already registered"));
-                return;
-            }
-
-            // Processing
-
-            // hashing password
-            const saltOrRounds = 10;
-            const hashedPassword = await bcrypt.hash(
-                registerPayload.password,
-                saltOrRounds
-            );
-
-            // persist the user
-            const newUser: User = {
-                id: randomUUID(),
-                createdAt: new Date(),
-                email: registerPayload.email,
-                username: registerPayload.username,
-                password: hashedPassword,
-            };
-            userTable.push(newUser);
-            res.writeHead(201, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify("Successfully registered the user."));
-        } catch (err: any) {
-            res.writeHead(400, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify(err.toString()));
+        const existingUserWithEmail = userTable.find(
+            (user) => user.email === registerPayload.email
+        );
+        if (existingUserWithEmail) {
+            return sendConflictResponse(res, "E-mail already registered");
         }
-    });
+
+        const saltOrRounds = 10;
+        const hashedPassword = await bcrypt.hash(
+            registerPayload.password,
+            saltOrRounds
+        );
+
+        const newUser: User = {
+            id: randomUUID(),
+            createdAt: new Date(),
+            email: registerPayload.email,
+            username: registerPayload.username,
+            password: hashedPassword,
+        };
+        userTable.push(newUser);
+        sendCreatedResponse(res, "Successfully registered the user.");
+    } catch (err: any) {
+        if (err instanceof InvalidJsonFormat) {
+            return sendBadRequestResponse(res, err.message);
+        }
+        if (err instanceof MissingRequestBody) {
+            return sendBadRequestResponse(res, err.message);
+        }
+
+        return sendBadRequestResponse(res, err.message);
+    }
 };
 
 export const login = async (req: IncomingMessage, res: ServerResponse) => {
-    // TODO: Read body => make this a reusable think throughout all endpoints
-    let body = "";
-
-    req.on("data", (chunk) => {
-        body += chunk.toString();
-    });
-
-    req.on("end", async () => {
-        // TODO: make this a reusable think throughout all endpoints
-        if (body.length === 0) {
-            // body wasn't sent
-            res.writeHead(400).end(JSON.stringify("Expected a request body."));
-            return;
-        }
-
-        const loginPayload: LoginRequest = JSON.parse(body);
+    try {
+        const loginPayload = await readJSON<LoginRequest>(req);
 
         const existingUserWithEmail = userTable.find(
             (usr) => usr.email === loginPayload.email
         );
         if (!existingUserWithEmail) {
-            res.writeHead(401, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify("Invalid credentials"));
-            return;
+            return sendConflictResponse(res, "Invalid credentials");
         }
 
         const isMatch = await bcrypt.compare(
@@ -121,18 +93,19 @@ export const login = async (req: IncomingMessage, res: ServerResponse) => {
         );
 
         if (!isMatch) {
-            res.writeHead(401, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify("Invalid credentials"));
-            return;
+            return sendConflictResponse(res, "Invalid credentials");
         }
 
         const token = generateAccessToken(existingUserWithEmail);
-        res.writeHead(200, JSON_CONTENT_TYPE);
-        res.end(
-            JSON.stringify({
-                message: "Successful login",
-                token,
-            })
-        );
-    });
+        sendSuccessResponse(res, { message: "Successful login", token });
+    } catch (err: any) {
+        if (err instanceof InvalidJsonFormat) {
+            return sendBadRequestResponse(res, err.message);
+        }
+        if (err instanceof MissingRequestBody) {
+            return sendBadRequestResponse(res, err.message);
+        }
+
+        return sendBadRequestResponse(res, err.message);
+    }
 };
