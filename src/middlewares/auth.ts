@@ -4,6 +4,7 @@ import { JSON_CONTENT_TYPE } from "../constants/http.js";
 import { RouterIncomingMessage } from "../types/http.js";
 import { extractToken, verifyToken } from "../utilities/jwt.js";
 import { Middleware, NextFunction } from "./utils/types.js";
+import { sendUnauthorizedResponse } from "../utilities/response.js";
 
 //  Authentication middleware
 export const withAuth: Middleware = async (
@@ -13,14 +14,10 @@ export const withAuth: Middleware = async (
 ) => {
     const token = extractToken(req);
     if (token == null) {
-        // FIX THIS!!!!
-        res.writeHead(401, JSON_CONTENT_TYPE);
-        res.end(
-            JSON.stringify({
-                error: "Missing or malformed Authorization header",
-            })
+        return sendUnauthorizedResponse(
+            res,
+            "Missing or malformed Authorization header"
         );
-        return;
     }
     try {
         const decoded = verifyToken(token);

@@ -1,5 +1,9 @@
 import { ServerResponse } from "http";
 import { RouterIncomingMessage } from "../types/http.js";
+import {
+    sendError,
+    sendTooManyRequestsResponseAndHeader,
+} from "../utilities/response.js";
 import { Middleware, NextFunction } from "./utils/types.js";
 
 const WINDOW_MS = 60 * 1000; // 1 minute
@@ -20,13 +24,7 @@ export const withRateLimit: Middleware = async (
         // New window
         ipCache.set(ip, { count: 1, resetTime: now + WINDOW_MS });
     } else if (record.count >= MAX_REQUESTS) {
-        // FIX THIS!!!!
-        res.writeHead(429, {
-            "retry-after": Math.ceil(
-                (record.resetTime - now) / 1000
-            ).toString(),
-        });
-        res.end(JSON.stringify({ error: "Too many requests" }));
+        return sendTooManyRequestsResponseAndHeader(res, record.resetTime);
     } else {
         record.count++;
     }

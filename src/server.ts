@@ -8,6 +8,7 @@ import { Params, RouterIncomingMessage } from "./types/http.js";
 // SETUP
 dotenv.config();
 
+// TODO: Move route matching logic to another file
 const PORT = Number(process.env.PORT) | 8000;
 const HOST = "localhost";
 const server = http.createServer(

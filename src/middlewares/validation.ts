@@ -114,4 +114,5 @@ export const validateRegisterUserBody: Middleware = async (
     if (body.email === undefined || !isValidEmail(body.email)) {
         return sendBadRequestResponse(res, "The given e-mail is not valid");
     }
+    next();
 };

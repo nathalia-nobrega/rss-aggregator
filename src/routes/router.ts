@@ -1,3 +1,20 @@
+import {
+    getAllFeeds,
+    addNewFeed,
+    getFeedById,
+    updateFeed,
+    deleteFeed,
+} from "../handlers/feed/feed.handler.js";
+import { registerUser, login } from "../handlers/user/user.handler.js";
+import { withAuth } from "../middlewares/auth.js";
+import { withRateLimit } from "../middlewares/rate-limit.js";
+import { runMiddlewares } from "../middlewares/utils/runner.js";
+import {
+    validateCreateFeedBody,
+    validateUpdateFeedBody,
+    validateRegisterUserBody,
+    readAndParseBody,
+} from "../middlewares/validation.js";
 import { Handler, Method, Route } from "./types.js";
 
 export const routes: Route[] = [];
@@ -42,3 +59,54 @@ export const addRoute = (method: Method, pattern: string, handler: Handler) => {
         pathParams: names,
     });
 };
+
+addRoute(
+    "GET",
+    "/feeds",
+    runMiddlewares([withRateLimit, withAuth], getAllFeeds)
+);
+
+addRoute(
+    "POST",
+    "/feeds",
+    runMiddlewares(
+        [withRateLimit, withAuth, readAndParseBody, validateCreateFeedBody],
+        addNewFeed
+    )
+);
+
+addRoute(
+    "GET",
+    "/feeds/:id",
+    runMiddlewares([withRateLimit, withAuth], getFeedById)
+);
+
+addRoute(
+    "PUT",
+    "/feeds/:id",
+    runMiddlewares(
+        [withRateLimit, withAuth, readAndParseBody, validateUpdateFeedBody],
+        updateFeed
+    )
+);
+
+addRoute(
+    "DELETE",
+    "/feeds/:id",
+    runMiddlewares([withRateLimit, withAuth], deleteFeed)
+);
+
+addRoute(
+    "POST",
+    "/auth/register",
+    runMiddlewares(
+        [withRateLimit, readAndParseBody, validateRegisterUserBody],
+        registerUser
+    )
+);
+
+addRoute(
+    "POST",
+    "/auth/login",
+    runMiddlewares([withRateLimit, readAndParseBody], login)
+);
