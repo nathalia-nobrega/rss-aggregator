@@ -25,21 +25,3 @@ export async function readRequestBody(req: IncomingMessage): Promise<string> {
         });
     });
 }
-
-/**
- * Reads and parses JSON from request body
- * Throws an error if JSON is invalid
- */
-export async function readJSON<T = any>(req: IncomingMessage): Promise<T> {
-    const body = await readRequestBody(req);
-
-    if (body.length === 0) {
-        throw new MissingRequestBody("Request body is required");
-    }
-
-    try {
-        return JSON.parse(body) as T;
-    } catch (err) {
-        throw new InvalidJsonFormat("Invalid JSON in request body");
-    }
-}

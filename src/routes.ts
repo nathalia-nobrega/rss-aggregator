@@ -1,4 +1,4 @@
-import { IncomingMessage, ServerResponse } from "http";
+import { ServerResponse } from "http";
 import { RouterIncomingMessage } from "./types/http.js";
 
 export type Method = "GET" | "POST" | "PUT" | "DELETE";

@@ -1,29 +1,21 @@
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
-import { InvalidJsonFormat } from "../../errors/InvalidJsonFormat.js";
-import { MissingRequestBody } from "../../errors/MissingRequestBody.js";
 import { extractFeed } from "../../services/feed/feed.service.js";
 import { RSSFeedData } from "../../types/feed/models.js";
 import {
     RSSFeedCreateRequest,
     UpdateFeedRequest,
 } from "../../types/feed/requests.js";
-import {
-    isFeedPriority,
-    isFeedStatus,
-    isValidFeedUrl,
-    normalizeUrl,
-} from "../../types/feed/validators.js";
+import { normalizeUrl } from "../../types/feed/validators.js";
 import { RouterIncomingMessage } from "../../types/http.js";
-import { readJSON } from "../../utilities/request.js";
 import {
     sendBadRequestResponse,
     sendConflictResponse,
+    sendError,
     sendNoContentResponse,
     sendNotFoundResponse,
     sendSuccessResponse,
 } from "../../utilities/response.js";
-import { isValidIdParam } from "../../utilities/validators.js";
 
 let feedTable: Array<RSSFeedData> = [];
 
@@ -43,14 +35,7 @@ export const addNewFeed = async (
     res: ServerResponse
 ) => {
     try {
-        const requestData = await readJSON<RSSFeedCreateRequest>(req);
-
-        if (!isValidFeedUrl(requestData.feedUrl)) {
-            return sendBadRequestResponse(
-                res,
-                "Invalid feed URL format. Expected .xml or .rss extension"
-            );
-        }
+        const requestData = req.body as RSSFeedCreateRequest;
 
         const existingFeed = feedTable.find(
             (feed) =>
@@ -73,14 +58,7 @@ export const addNewFeed = async (
         feedTable.push(newFeed);
         return sendSuccessResponse(res, newFeed);
     } catch (err: any) {
-        if (err instanceof InvalidJsonFormat) {
-            return sendBadRequestResponse(res, err.message);
-        }
-        if (err instanceof MissingRequestBody) {
-            return sendBadRequestResponse(res, err.message);
-        }
-
-        return sendBadRequestResponse(res, err.message);
+        return sendError(res, 500, err.toString());
     }
 };
 
@@ -89,13 +67,6 @@ export const getFeedById = async (
     res: ServerResponse
 ) => {
     const id = req.params["id"];
-
-    if (id === undefined || !isValidIdParam(id)) {
-        return sendBadRequestResponse(
-            res,
-            "Required parameter 'id' not found or not valid"
-        );
-    }
 
     const feedFound = feedTable.find((feed) => feed.id === id);
 
@@ -114,15 +85,6 @@ export const updateFeed = async (
     try {
         const id = req.params["id"];
 
-        // Won't get here because route matching doesn't reach the endpoint if id isn't present
-        // But it's nice to have it here just for the sake of learning
-        if (id === undefined) {
-            return sendBadRequestResponse(
-                res,
-                "Required parameter 'id' not found"
-            );
-        }
-
         let existingFeed = feedTable.find((feed) => feed.id === id);
 
         if (!existingFeed) {
@@ -132,21 +94,14 @@ export const updateFeed = async (
             );
         }
 
-        // if json.parse throwns => send malformed body error
-        const feedUpdateData = await readJSON<UpdateFeedRequest>(req);
+        const feedUpdateData = req.body as UpdateFeedRequest;
 
         // Something very useful that I learned here:
         // Type assertions remove safety, they do not add it.
-        if (
-            feedUpdateData.feedStatus !== undefined &&
-            isFeedStatus(feedUpdateData.feedStatus)
-        )
+        if (feedUpdateData.feedStatus !== undefined)
             existingFeed.status = feedUpdateData.feedStatus;
 
-        if (
-            feedUpdateData.feedPriority !== undefined &&
-            isFeedPriority(feedUpdateData.feedPriority)
-        )
+        if (feedUpdateData.feedPriority !== undefined)
             existingFeed.priority = feedUpdateData.feedPriority;
 
         if (feedUpdateData.feedTitle !== undefined)
@@ -154,14 +109,7 @@ export const updateFeed = async (
 
         return sendSuccessResponse(res, existingFeed);
     } catch (err: any) {
-        if (err instanceof InvalidJsonFormat) {
-            return sendBadRequestResponse(res, err.message);
-        }
-        if (err instanceof MissingRequestBody) {
-            return sendBadRequestResponse(res, err.message);
-        }
-
-        return sendBadRequestResponse(res, err.message);
+        return sendError(res, 500, err.toString());
     }
 };
 
@@ -171,12 +119,6 @@ export const deleteFeed = async (
 ) => {
     try {
         const id = req.params["id"];
-        if (id === undefined) {
-            return sendBadRequestResponse(
-                res,
-                "Required parameter 'id' not found"
-            );
-        }
 
         const feedToDelete = feedTable.find((feed) => feed.id === id);
         if (!feedToDelete) {
@@ -190,6 +132,6 @@ export const deleteFeed = async (
 
         return sendNoContentResponse(res);
     } catch (err: any) {
-        return sendBadRequestResponse(res, err.toString());
+        return sendError(res, 500, err.toString());
     }
 };

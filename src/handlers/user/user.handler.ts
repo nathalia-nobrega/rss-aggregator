@@ -1,20 +1,17 @@
 import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
-import { IncomingMessage, ServerResponse } from "http";
-import { InvalidJsonFormat } from "../../errors/InvalidJsonFormat.js";
-import { MissingRequestBody } from "../../errors/MissingRequestBody.js";
+import { ServerResponse } from "http";
+import { RouterIncomingMessage } from "../../types/http.js";
 import { User } from "../../types/user/models.js";
 import {
     LoginRequest,
     RegisterUserRequest,
 } from "../../types/user/requests.js";
-import { isValidEmail } from "../../types/user/validators.js";
 import { generateAccessToken } from "../../utilities/jwt.js";
-import { readJSON } from "../../utilities/request.js";
 import {
-    sendBadRequestResponse,
     sendConflictResponse,
     sendCreatedResponse,
+    sendError,
     sendSuccessResponse,
 } from "../../utilities/response.js";
 
@@ -29,19 +26,11 @@ let userTable: Array<User> = [
 ];
 
 export const registerUser = async (
-    req: IncomingMessage,
+    req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    const registerPayload = await readJSON<RegisterUserRequest>(req);
-    // this validation could go to a validation middleware maybe?
-    // think about this one
+    const registerPayload = req.body as RegisterUserRequest;
     try {
-        if (
-            registerPayload.email === undefined ||
-            !isValidEmail(registerPayload.email)
-        ) {
-            return sendBadRequestResponse(res, "The given e-mail is not valid");
-        }
         const existingUserWithEmail = userTable.find(
             (user) => user.email === registerPayload.email
         );
@@ -65,20 +54,16 @@ export const registerUser = async (
         userTable.push(newUser);
         sendCreatedResponse(res, "Successfully registered the user.");
     } catch (err: any) {
-        if (err instanceof InvalidJsonFormat) {
-            return sendBadRequestResponse(res, err.message);
-        }
-        if (err instanceof MissingRequestBody) {
-            return sendBadRequestResponse(res, err.message);
-        }
-
-        return sendBadRequestResponse(res, err.message);
+        return sendError(res, 500, err.toString());
     }
 };
 
-export const login = async (req: IncomingMessage, res: ServerResponse) => {
+export const login = async (
+    req: RouterIncomingMessage,
+    res: ServerResponse
+) => {
     try {
-        const loginPayload = await readJSON<LoginRequest>(req);
+        const loginPayload = req.body as LoginRequest;
 
         const existingUserWithEmail = userTable.find(
             (usr) => usr.email === loginPayload.email
@@ -99,13 +84,6 @@ export const login = async (req: IncomingMessage, res: ServerResponse) => {
         const token = generateAccessToken(existingUserWithEmail);
         sendSuccessResponse(res, { message: "Successful login", token });
     } catch (err: any) {
-        if (err instanceof InvalidJsonFormat) {
-            return sendBadRequestResponse(res, err.message);
-        }
-        if (err instanceof MissingRequestBody) {
-            return sendBadRequestResponse(res, err.message);
-        }
-
-        return sendBadRequestResponse(res, err.message);
+        return sendError(res, 500, err.toString());
     }
 };
