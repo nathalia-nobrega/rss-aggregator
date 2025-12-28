@@ -1,10 +1,10 @@
 import { ServerResponse } from "http";
-import { Handler } from "../../routes.js";
 import { RouterIncomingMessage } from "../../types/http.js";
 import { sendError } from "../../utilities/response.js";
 import { Middleware } from "./types.js";
+import { Handler } from "../../routes/types.js";
 
-export function runMiddleware(
+export function runMiddlewares(
     middlewares: Array<Middleware>,
     handler: Handler
 ): Handler {

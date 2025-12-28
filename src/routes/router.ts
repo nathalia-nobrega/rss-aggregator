@@ -1,14 +1,4 @@
-import {
-    addNewFeed,
-    deleteFeed,
-    getAllFeeds,
-    getFeedById,
-    updateFeed,
-} from "../handlers/feed/feed.handler.js";
-import { login, registerUser } from "../handlers/user/user.handler.js";
-import { withAuth } from "../middlewares/auth.js";
-import { withRateLimit } from "../middlewares/rate-limit.js";
-import { Handler, Method, Route } from "../routes.js";
+import { Handler, Method, Route } from "./types.js";
 
 export const routes: Route[] = [];
 
@@ -52,13 +42,3 @@ export const addRoute = (method: Method, pattern: string, handler: Handler) => {
         pathParams: names,
     });
 };
-
-// Definitions
-addRoute("GET", "/feeds", withRateLimit(withAuth(getAllFeeds)));
-addRoute("POST", "/feeds", withRateLimit(withAuth(addNewFeed)));
-addRoute("GET", "/feeds/:id", withRateLimit(withAuth(getFeedById)));
-addRoute("PUT", "/feeds/:id", withRateLimit(withAuth(updateFeed)));
-addRoute("DELETE", "/feeds/:id", withRateLimit(withAuth(deleteFeed)));
-
-addRoute("POST", "/auth/register", withRateLimit(registerUser));
-addRoute("POST", "/auth/login", withRateLimit(login));
