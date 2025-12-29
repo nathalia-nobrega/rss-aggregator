@@ -5,8 +5,13 @@ import {
     updateFeed,
     deleteFeed,
 } from "../handlers/feed/feed.handler.js";
-import { registerUser, login } from "../handlers/user/user.handler.js";
-import { withAuth } from "../middlewares/auth.js";
+import {
+    registerUser,
+    login,
+    getAllUsers,
+} from "../handlers/user/user.handler.js";
+import { withAuth } from "../middlewares/authentication.js";
+import { checkFeedOwnership } from "../middlewares/authorization.js";
 import { withRateLimit } from "../middlewares/rate-limit.js";
 import { runMiddlewares } from "../middlewares/utils/runner.js";
 import {
@@ -78,14 +83,20 @@ addRoute(
 addRoute(
     "GET",
     "/feeds/:id",
-    runMiddlewares([withRateLimit, withAuth], getFeedById)
+    runMiddlewares([withRateLimit, withAuth, checkFeedOwnership], getFeedById)
 );
 
 addRoute(
     "PUT",
     "/feeds/:id",
     runMiddlewares(
-        [withRateLimit, withAuth, readAndParseBody, validateUpdateFeedBody],
+        [
+            withRateLimit,
+            withAuth,
+            checkFeedOwnership,
+            readAndParseBody,
+            validateUpdateFeedBody,
+        ],
         updateFeed
     )
 );
@@ -93,7 +104,7 @@ addRoute(
 addRoute(
     "DELETE",
     "/feeds/:id",
-    runMiddlewares([withRateLimit, withAuth], deleteFeed)
+    runMiddlewares([withRateLimit, withAuth, checkFeedOwnership], deleteFeed)
 );
 
 addRoute(
@@ -110,3 +121,5 @@ addRoute(
     "/auth/login",
     runMiddlewares([withRateLimit, readAndParseBody], login)
 );
+
+addRoute("GET", "/users", runMiddlewares([], getAllUsers));

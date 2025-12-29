@@ -17,7 +17,7 @@ import {
     sendSuccessResponse,
 } from "../../utilities/response.js";
 
-let feedTable: Array<RSSFeedData> = [];
+export let feedTable: Array<RSSFeedData> = [];
 
 // Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
 // I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
@@ -27,7 +27,10 @@ export const getAllFeeds = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    return sendSuccessResponse(res, feedTable);
+    return sendSuccessResponse(
+        res,
+        feedTable.filter((feed) => feed.userId === req.userId)
+    );
 };
 
 export const addNewFeed = async (
@@ -50,6 +53,7 @@ export const addNewFeed = async (
         const extractedData = await extractFeed(requestData.feedUrl);
         const newFeed: RSSFeedData = {
             id: randomUUID(),
+            userId: req.userId!,
             ...extractedData,
             priority: "high",
             status: "active",

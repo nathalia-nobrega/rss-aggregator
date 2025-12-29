@@ -1,21 +1,12 @@
 import Parser from "rss-parser";
-import { FeedTypeError } from "../../errors/FeedTypeError.js";
 import { ExtractedFeedData } from "../../types/feed/models.js";
 
-function getTypeOfFeed(feedUrl: string): "XML" | "URL" | null {
-    return feedUrl.endsWith(".rss")
-        ? "URL"
-        : feedUrl.endsWith(".xml")
-        ? "XML"
-        : null;
+function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
+    return feedUrl.endsWith(".rss") ? "URL" : "XML";
 }
 
 export async function extractFeed(feedUrl: string): Promise<ExtractedFeedData> {
     const feedType = getTypeOfFeed(feedUrl);
-    if (!feedType)
-        throw new FeedTypeError(
-            "Invalid feed URL format. Expected .xml or .rss extension"
-        );
     const feed = await parseFeed(feedUrl, feedType);
     return {
         description: feed.description || "No description found",

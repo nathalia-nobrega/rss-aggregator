@@ -65,9 +65,9 @@ export function sendUnauthorizedResponse(
     return sendError(res, 401, message);
 }
 
-// export function sendForbiddenResponse(
-//     res: ServerResponse,
-//     message: string
-// ): void {
-//     return sendError(res, 403, message);
-// }
+export function sendForbiddenResponse(
+    res: ServerResponse,
+    message: string
+): void {
+    return sendError(res, 403, message);
+}

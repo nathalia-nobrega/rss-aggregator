@@ -13,17 +13,10 @@ import {
     sendCreatedResponse,
     sendError,
     sendSuccessResponse,
+    sendUnauthorizedResponse,
 } from "../../utilities/response.js";
 
-let userTable: Array<User> = [
-    {
-        id: randomUUID(),
-        username: "zero_dollar_woman",
-        email: "godis@real.com",
-        createdAt: new Date(),
-        password: "$2y$12$4Umg0rCJwMswRw/l.SwHvuQV01coP0eWmGzd61QH2RvAOMANUBGC",
-    },
-];
+let userTable: Array<User> = [];
 
 export const registerUser = async (
     req: RouterIncomingMessage,
@@ -69,7 +62,7 @@ export const login = async (
             (usr) => usr.email === loginPayload.email
         );
         if (!existingUserWithEmail) {
-            return sendConflictResponse(res, "Invalid credentials");
+            return sendUnauthorizedResponse(res, "Invalid credentials");
         }
 
         const isMatch = await bcrypt.compare(
@@ -78,7 +71,7 @@ export const login = async (
         );
 
         if (!isMatch) {
-            return sendConflictResponse(res, "Invalid credentials");
+            return sendUnauthorizedResponse(res, "Invalid credentials");
         }
 
         const token = generateAccessToken(existingUserWithEmail);
@@ -86,4 +79,13 @@ export const login = async (
     } catch (err: any) {
         return sendError(res, 500, err.toString());
     }
+};
+
+// this handler is just for testing, it will be deleted later
+
+export const getAllUsers = async (
+    req: RouterIncomingMessage,
+    res: ServerResponse
+) => {
+    return sendSuccessResponse(res, userTable);
 };

@@ -1,22 +1,20 @@
-import { IncomingMessage, ServerResponse } from "http";
-import { InvalidJsonFormat } from "../errors/InvalidJsonFormat.js";
-import { MissingRequestBody } from "../errors/MissingRequestBody.js";
-import { RouterIncomingMessage } from "../types/http.js";
-import { Middleware, NextFunction } from "./utils/types.js";
-import { sendBadRequestResponse, sendError } from "../utilities/response.js";
-import { isValidIdParam } from "../utilities/validators.js";
+import { ServerResponse } from "http";
+import {
+    RSSFeedCreateRequest,
+    UpdateFeedRequest,
+} from "../types/feed/requests.js";
 import {
     isFeedPriority,
     isFeedStatus,
     isValidFeedUrl,
 } from "../types/feed/validators.js";
-import {
-    RSSFeedCreateRequest,
-    UpdateFeedRequest,
-} from "../types/feed/requests.js";
-import { readRequestBody } from "../utilities/request.js";
+import { RouterIncomingMessage } from "../types/http.js";
 import { RegisterUserRequest } from "../types/user/requests.js";
 import { isValidEmail } from "../types/user/validators.js";
+import { readRequestBody } from "../utilities/request.js";
+import { sendBadRequestResponse, sendError } from "../utilities/response.js";
+import { isValidIdParam } from "../utilities/validators.js";
+import { Middleware, NextFunction } from "./utils/types.js";
 
 export const readAndParseBody: Middleware = async (
     req: RouterIncomingMessage,
