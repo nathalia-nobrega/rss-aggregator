@@ -16,6 +16,7 @@ import {
     sendNotFoundResponse,
     sendSuccessResponse,
 } from "../../utilities/response.js";
+import { allFeedsFromUserId, insertFeed } from "../../db/queries.js";
 
 export let feedTable: Array<RSSFeedData> = [];
 
@@ -27,10 +28,7 @@ export const getAllFeeds = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    return sendSuccessResponse(
-        res,
-        feedTable.filter((feed) => feed.userId === req.userId)
-    );
+    return sendSuccessResponse(res, allFeedsFromUserId.all(req.userId!));
 };
 
 export const addNewFeed = async (
@@ -60,6 +58,16 @@ export const addNewFeed = async (
         };
 
         feedTable.push(newFeed);
+        insertFeed.get(
+            randomUUID(),
+            newFeed.userId,
+            newFeed.url,
+            normalizeUrl(newFeed.url),
+            newFeed.title,
+            newFeed.description,
+            "active",
+            "high"
+        );
         return sendSuccessResponse(res, newFeed);
     } catch (err: any) {
         return sendError(res, 500, err.toString());
