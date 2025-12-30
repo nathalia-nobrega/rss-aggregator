@@ -15,8 +15,25 @@ export interface ExtractedFeedData {
  */
 export interface RSSFeedData extends ExtractedFeedData {
     id: string;
-    userId: string;
     status: FeedStatus;
     priority: FeedPriority;
     // items: Array<RSSFeedItem>
 }
+
+/**
+ * Data that comes from the database
+ */
+export type RSSFeedDataDB = {
+    id: string;
+    user_id: string;
+    url: string;
+    normalized_url: string;
+    title: string;
+    description: string;
+    status: string;
+    priority: string;
+    last_fetched: string;
+    error_count: string;
+    created_at: string;
+    updated_at: string;
+};

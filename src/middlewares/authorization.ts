@@ -7,14 +7,14 @@
  */
 
 import { ServerResponse } from "http";
+import { findFeedById } from "../db/queries.js";
 import { RouterIncomingMessage } from "../types/http.js";
-import { Middleware, NextFunction } from "./utils/types.js";
 import {
     sendForbiddenResponse,
     sendNotFoundResponse,
     sendUnauthorizedResponse,
 } from "../utilities/response.js";
-import { feedTable } from "../handlers/feed/feed.handler.js";
+import { Middleware, NextFunction } from "./utils/types.js";
 
 export const checkFeedOwnership: Middleware = async (
     req: RouterIncomingMessage,
@@ -30,15 +30,15 @@ export const checkFeedOwnership: Middleware = async (
         );
     }
 
-    const feedParamId = req.params["id"];
+    const feedParamId = req.params["id"]!;
 
-    const feed = feedTable.find((feed) => feed.id === feedParamId);
+    const feedRecord = findFeedById.get(feedParamId);
 
-    if (!feed) {
+    if (!feedRecord) {
         return sendNotFoundResponse(res, "Feed not found");
     }
 
-    if (feed.userId !== reqUserId) {
+    if (feedRecord.user_id !== reqUserId) {
         return sendForbiddenResponse(
             res,
             "You do not have access to resources that you do not own"

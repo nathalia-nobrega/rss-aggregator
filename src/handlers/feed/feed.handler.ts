@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
 import { extractFeed } from "../../services/feed/feed.service.js";
-import { RSSFeedData } from "../../types/feed/models.js";
+import { RSSFeedData, RSSFeedDataDB } from "../../types/feed/models.js";
 import {
     RSSFeedCreateRequest,
     UpdateFeedRequest,
@@ -16,9 +16,15 @@ import {
     sendNotFoundResponse,
     sendSuccessResponse,
 } from "../../utilities/response.js";
-import { allFeedsFromUserId, insertFeed } from "../../db/queries.js";
-
-export let feedTable: Array<RSSFeedData> = [];
+import {
+    allFeedsFromUserId,
+    deleteFeedById,
+    findFeedById,
+    findFeedByUserIdAndNormalizedUrl,
+    insertFeed,
+    updateFeedById,
+} from "../../db/queries.js";
+import { entityToFeed } from "../../utilities/transformers.js";
 
 // Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
 // I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
@@ -38,9 +44,9 @@ export const addNewFeed = async (
     try {
         const requestData = req.body as RSSFeedCreateRequest;
 
-        const existingFeed = feedTable.find(
-            (feed) =>
-                normalizeUrl(feed.url) === normalizeUrl(requestData.feedUrl)
+        const existingFeed = findFeedByUserIdAndNormalizedUrl.get(
+            req.userId!,
+            normalizeUrl(requestData.feedUrl)
         );
         if (existingFeed) {
             return sendConflictResponse(
@@ -49,26 +55,17 @@ export const addNewFeed = async (
             );
         }
         const extractedData = await extractFeed(requestData.feedUrl);
-        const newFeed: RSSFeedData = {
-            id: randomUUID(),
-            userId: req.userId!,
-            ...extractedData,
-            priority: "high",
-            status: "active",
-        };
-
-        feedTable.push(newFeed);
-        insertFeed.get(
+        const record = insertFeed.get(
             randomUUID(),
-            newFeed.userId,
-            newFeed.url,
-            normalizeUrl(newFeed.url),
-            newFeed.title,
-            newFeed.description,
+            req.userId!,
+            extractedData.url,
+            normalizeUrl(extractedData.url),
+            extractedData.title,
+            extractedData.description,
             "active",
             "high"
-        );
-        return sendSuccessResponse(res, newFeed);
+        ) as RSSFeedDataDB;
+        return sendSuccessResponse(res, entityToFeed(record));
     } catch (err: any) {
         return sendError(res, 500, err.toString());
     }
@@ -78,9 +75,9 @@ export const getFeedById = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    const id = req.params["id"];
+    const id = req.params["id"]!;
 
-    const feedFound = feedTable.find((feed) => feed.id === id);
+    const feedFound = findFeedById.get(id) as RSSFeedDataDB;
 
     if (!feedFound) {
         return sendNotFoundResponse(
@@ -88,16 +85,16 @@ export const getFeedById = async (
             "Couldn't find a feed with the given id"
         );
     }
-    return sendSuccessResponse(res, feedFound);
+    return sendSuccessResponse(res, entityToFeed(feedFound));
 };
 export const updateFeed = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
     try {
-        const id = req.params["id"];
+        const feedId = req.params["id"]!;
 
-        let existingFeed = feedTable.find((feed) => feed.id === id);
+        let existingFeed = findFeedById.get(feedId) as RSSFeedDataDB;
 
         if (!existingFeed) {
             return sendBadRequestResponse(
@@ -107,19 +104,28 @@ export const updateFeed = async (
         }
 
         const feedUpdateData = req.body as UpdateFeedRequest;
+        const updates: Partial<UpdateFeedRequest> = {};
 
         // Something very useful that I learned here:
         // Type assertions remove safety, they do not add it.
         if (feedUpdateData.feedStatus !== undefined)
-            existingFeed.status = feedUpdateData.feedStatus;
+            updates.feedStatus = feedUpdateData.feedStatus;
 
         if (feedUpdateData.feedPriority !== undefined)
-            existingFeed.priority = feedUpdateData.feedPriority;
+            updates.feedPriority = feedUpdateData.feedPriority;
 
         if (feedUpdateData.feedTitle !== undefined)
-            existingFeed.title = feedUpdateData.feedTitle;
+            updates.feedTitle = feedUpdateData.feedTitle;
 
-        return sendSuccessResponse(res, existingFeed);
+        const updatedRecord = updateFeedById.get(
+            feedUpdateData.feedTitle ?? null,
+            feedUpdateData.feedStatus ?? null,
+            feedUpdateData.feedPriority ?? null,
+            existingFeed.id,
+            req.userId!
+        ) as RSSFeedDataDB;
+
+        return sendSuccessResponse(res, entityToFeed(updatedRecord));
     } catch (err: any) {
         return sendError(res, 500, err.toString());
     }
@@ -130,9 +136,9 @@ export const deleteFeed = async (
     res: ServerResponse
 ) => {
     try {
-        const id = req.params["id"];
+        const feedId = req.params["id"]!;
 
-        const feedToDelete = feedTable.find((feed) => feed.id === id);
+        const feedToDelete = findFeedById.get(feedId) as RSSFeedDataDB;
         if (!feedToDelete) {
             return sendNotFoundResponse(
                 res,
@@ -140,7 +146,7 @@ export const deleteFeed = async (
             );
         }
 
-        feedTable.splice(feedTable.indexOf(feedToDelete), 1);
+        deleteFeedById.get(feedToDelete.id);
 
         return sendNoContentResponse(res);
     } catch (err: any) {

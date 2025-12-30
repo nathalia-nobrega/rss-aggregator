@@ -87,7 +87,7 @@ addRoute(
 );
 
 addRoute(
-    "PUT",
+    "PATCH",
     "/feeds/:id",
     runMiddlewares(
         [
