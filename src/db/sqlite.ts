@@ -44,6 +44,14 @@ CREATE TABLE IF NOT EXISTS feeds (
     ON feeds(status, priority);
 `;
 
+const createArticles = `
+    CREATE TABLE articles (
+        id TEXT PRIMARY KEY,
+        feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE
+    );
+`;
+
+database.exec("PRAGMA foreign_keys = ON");
 database.exec(createUsers);
 database.exec(createFeeds);
 

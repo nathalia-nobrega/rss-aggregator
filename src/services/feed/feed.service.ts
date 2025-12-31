@@ -1,5 +1,12 @@
 import Parser from "rss-parser";
 import { ExtractedFeedData } from "../../types/feed/models.js";
+import path from "path";
+import * as fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
     return feedUrl.endsWith(".rss") ? "URL" : "XML";
@@ -8,6 +15,16 @@ function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
 export async function extractFeed(feedUrl: string): Promise<ExtractedFeedData> {
     const feedType = getTypeOfFeed(feedUrl);
     const feed = await parseFeed(feedUrl, feedType);
+
+    // This is for testing purposes,
+    // Printing the items in the console/terminal is pretty awful
+    const outputFile = "feed.json";
+    const outputPath = path.resolve(__dirname, "..", "..", outputFile);
+    await fs.promises.writeFile(
+        outputPath,
+        JSON.stringify(feed.items),
+        "utf-8"
+    );
     return {
         description: feed.description || "No description found",
         title: feed.title || "Untitled Feed",
@@ -35,6 +52,24 @@ export async function parseFeed(feedUrl: string, feedType: "XML" | "URL") {
     return await parser.parseURL(feedUrl);
 }
 
-// parseFeed("https://www.reddit.com/.rss", "URL");
-// parseFeed("https://sizeof.cat/index.xml", "XML");
-// parseFeed("https://beej.us/blog/rss.xml", "XML");
+/**
+ * TESTING DATA BELOW
+ */
+
+// https://www.reddit.com/.rss
+// https://sizeof.cat/index.xml
+// https://beej.us/blog/rss.xml
+// https://unixsheikh.com/feed.rss"
+// https://cheapskatesguide.org/cheapskates-guide-rss-feed.xml
+
+// From reddit's feed: title, link, pubDate, author, content, contentSnippet, isoDate
+// From unixsheikh's feed: title, link, pubDate, content, contentSnippet, isoDate
+// From cheap skate's guide: title, link, pubDate, author, content, contentSnippet, isoDate
+
+// Something to note: the three feeds that I fetched are returning
+// the pubDate in different formats (below). Maybe it's safer to use isoDate?
+// See if I can just adjust them to one single format before persisting in the database
+
+// 1 - 2025-12-30T23:03:51.000Z
+// 2 - Wed, 08 Oct 2025 00:00:00 GMT
+// 3 - 19 Dec 2025 04:16:00 GMT
