@@ -7,7 +7,7 @@
  */
 
 import { ServerResponse } from "http";
-import { findFeedById } from "../db/queries.js";
+import { findFeedById } from "../db/feed.queries.js";
 import { RouterIncomingMessage } from "../types/http.js";
 import {
     sendForbiddenResponse,

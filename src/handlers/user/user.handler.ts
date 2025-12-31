@@ -1,8 +1,14 @@
 import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
+import {
+    existsByEmail,
+    findAllUsers,
+    findUserByEmail,
+    insertUser,
+} from "../../db/user.queries.js";
 import { RouterIncomingMessage } from "../../types/http.js";
-import { User } from "../../types/user/models.js";
+import { UserDB } from "../../types/user/models.js";
 import {
     LoginRequest,
     RegisterUserRequest,
@@ -15,8 +21,7 @@ import {
     sendSuccessResponse,
     sendUnauthorizedResponse,
 } from "../../utilities/response.js";
-
-let userTable: Array<User> = [];
+import { entityToUser } from "../../utilities/transformers.js";
 
 export const registerUser = async (
     req: RouterIncomingMessage,
@@ -24,10 +29,11 @@ export const registerUser = async (
 ) => {
     const registerPayload = req.body as RegisterUserRequest;
     try {
-        const existingUserWithEmail = userTable.find(
-            (user) => user.email === registerPayload.email
-        );
-        if (existingUserWithEmail) {
+        const existingUserWithEmail = existsByEmail.get(
+            registerPayload.email
+        ) as { email_already_registered: number };
+
+        if (existingUserWithEmail.email_already_registered === 1) {
             return sendConflictResponse(res, "E-mail already registered");
         }
 
@@ -37,15 +43,14 @@ export const registerUser = async (
             saltOrRounds
         );
 
-        const newUser: User = {
-            id: randomUUID(),
-            createdAt: new Date(),
-            email: registerPayload.email,
-            username: registerPayload.username,
-            password: hashedPassword,
-        };
-        userTable.push(newUser);
-        sendCreatedResponse(res, "Successfully registered the user.");
+        const newUser = insertUser.get(
+            randomUUID(),
+            registerPayload.email,
+            registerPayload.username,
+            hashedPassword
+        ) as UserDB;
+
+        sendCreatedResponse(res, entityToUser(newUser));
     } catch (err: any) {
         return sendError(res, 500, err.toString());
     }
@@ -58,9 +63,10 @@ export const login = async (
     try {
         const loginPayload = req.body as LoginRequest;
 
-        const existingUserWithEmail = userTable.find(
-            (usr) => usr.email === loginPayload.email
-        );
+        const existingUserWithEmail = findUserByEmail.get(
+            loginPayload.email
+        ) as UserDB;
+
         if (!existingUserWithEmail) {
             return sendUnauthorizedResponse(res, "Invalid credentials");
         }
@@ -87,5 +93,7 @@ export const getAllUsers = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    return sendSuccessResponse(res, userTable);
+    const usersList = findAllUsers.all();
+    usersList.map((user) => entityToUser(user as UserDB));
+    return sendSuccessResponse(res, usersList);
 };

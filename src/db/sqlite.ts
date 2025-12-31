@@ -7,10 +7,23 @@ const __dirname = dirname(__filename);
 
 const database = new DatabaseSync(`${__dirname}/database.db`);
 
-const initDb = `
+const createUsers = `
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
+    ON users(email);
+`;
+
+const createFeeds = `
 CREATE TABLE IF NOT EXISTS feeds (
         id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         url TEXT NOT NULL,
         normalized_url TEXT NOT NULL,
         title TEXT NOT NULL,
@@ -31,6 +44,7 @@ CREATE TABLE IF NOT EXISTS feeds (
     ON feeds(status, priority);
 `;
 
-database.exec(initDb);
+database.exec(createUsers);
+database.exec(createFeeds);
 
 export default database;

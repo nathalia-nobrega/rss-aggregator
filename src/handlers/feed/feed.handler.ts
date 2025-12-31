@@ -23,7 +23,7 @@ import {
     findFeedByUserIdAndNormalizedUrl,
     insertFeed,
     updateFeedById,
-} from "../../db/queries.js";
+} from "../../db/feed.queries.js";
 import { entityToFeed } from "../../utilities/transformers.js";
 
 // Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts

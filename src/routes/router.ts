@@ -20,6 +20,7 @@ import {
     validateRegisterUserBody,
     readAndParseBody,
 } from "../middlewares/validation.js";
+import { resetDatabase } from "../handlers/test/reset.handler.js";
 import { Handler, Method, Route } from "./types.js";
 
 export const routes: Route[] = [];
@@ -123,3 +124,9 @@ addRoute(
 );
 
 addRoute("GET", "/users", runMiddlewares([], getAllUsers));
+
+addRoute(
+    "POST",
+    "/__test__/reset",
+    runMiddlewares([withRateLimit], resetDatabase)
+);

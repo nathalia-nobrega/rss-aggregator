@@ -2,7 +2,13 @@ export type User = {
     id: string;
     username: string;
     email: string;
-    createdAt: Date;
+    password: string;
+};
+
+export type UserDB = {
+    id: string;
+    email: string;
+    username: string;
     password: string;
 };
 
