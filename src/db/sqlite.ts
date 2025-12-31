@@ -44,15 +44,32 @@ CREATE TABLE IF NOT EXISTS feeds (
     ON feeds(status, priority);
 `;
 
+// TODO: FIND OUT WHY THE CONTENT IS HASHED
 const createArticles = `
     CREATE TABLE articles (
         id TEXT PRIMARY KEY,
-        feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE
+        feed_id TEXT NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        url TEXT NOT NULL,
+        pub_date INTEGER NOT NULL,
+        content_hash TEXT NOT NULL, -- title + content hash
+        content TEXT NOT NULL
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
     );
+
+    -- one row per article per feed
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_feed_url
+    ON articles(feed_id, url);
+
+    -- necessary for fetching the latest articles
+    CREATE INDEX IF NOT EXISTS idx_articles_pub_date
+    ON articles(feed_id, pub_date DESC, id DESC);
 `;
 
 database.exec("PRAGMA foreign_keys = ON");
 database.exec(createUsers);
 database.exec(createFeeds);
+database.exec(createArticles);
 
 export default database;
