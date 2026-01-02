@@ -38,7 +38,9 @@ export const getAllFeeds = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
-    return sendSuccessResponse(res, allFeedsFromUserId.all(req.userId!));
+    const feeds = allFeedsFromUserId.all(req.userId!) as RSSFeedDataDB[];
+    const list = feeds.map((feed) => entityToFeed(feed));
+    return sendSuccessResponse(res, list);
 };
 
 export const addNewFeed = async (
@@ -69,10 +71,12 @@ export const addNewFeed = async (
             "active",
             "high"
         ) as RSSFeedDataDB;
-        const items = extractedData.items!.slice(0, 20);
+
+        const articles = extractedData.items!.slice(0, 20);
         insertManyInTransaction(
-            items.map((article) => itemToEntity(record.id, article))
+            articles.map((article) => itemToEntity(record.id, article))
         );
+
         return sendSuccessResponse(res, entityToFeed(record));
     } catch (err: any) {
         return sendError(res, 500, err.toString());

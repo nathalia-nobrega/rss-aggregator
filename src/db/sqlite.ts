@@ -54,6 +54,7 @@ const createArticles = `
         pub_date INTEGER NOT NULL,
         content_hash TEXT NOT NULL, -- title + content hash
         content TEXT NOT NULL,
+        excerpt TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
     );

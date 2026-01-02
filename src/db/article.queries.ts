@@ -19,10 +19,11 @@ export const insertArticle = database.prepare(
         pub_date, 
         content_hash, 
         content,
+        excerpt,
         created_at, 
         updated_at)
     VALUES (
-        ?, ?, ?, ?, ?, ?, ?, 
+        ?, ?, ?, ?, ?, ?, ?, ?, 
         unixepoch('now', 'localtime'), 
         unixepoch('now', 'localtime')
     )
@@ -39,13 +40,13 @@ export const insertManyInTransaction = (
         pub_date: number;
         content_hash: string;
         content: string;
+        excerpt: string;
     }>
 ) => {
     database.exec("BEGIN TRANSACTION");
 
     try {
         for (const row of rows) {
-            console.debug("GOT HEREEEEE");
             insertArticle.run(
                 row.id,
                 row.feed_id,
@@ -53,7 +54,8 @@ export const insertManyInTransaction = (
                 row.link,
                 row.pub_date,
                 row.content_hash,
-                row.content
+                row.content,
+                row.excerpt
             );
         }
         database.exec("COMMIT");
@@ -63,6 +65,7 @@ export const insertManyInTransaction = (
     }
 };
 
+// should the excerpt be updated too?
 export const updateArticleById = database.prepare(
     `
     UPDATE articles
@@ -79,7 +82,7 @@ export const updateArticleById = database.prepare(
 // TODO: Find out more about this cursor pagination!!!!!!!
 export const findAllArticlesByFeedId = database.prepare(
     `
-    SELECT id, feed_id, title, link, pub_date
+    SELECT id, feed_id, title, link, pub_date, excerpt
     FROM articles
     WHERE feed_id = ?
     AND (
@@ -102,9 +105,7 @@ export const findDetailedArticleByIdAndUserId = database.prepare(
         a.title,
         a.link,
         a.pub_date,
-        a.content_hash,
-        a.created_at,
-        a.updated_at
+        a.content
     FROM articles a
     JOIN feeds f ON f.id = a.feed_id
     WHERE a.id = ?

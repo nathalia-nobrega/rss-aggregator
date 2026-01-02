@@ -2,7 +2,11 @@ import Parser from "rss-parser";
 import { FeedPriority, FeedStatus } from "../types/feed/enums.js";
 import { RSSFeedData, RSSFeedDataDB } from "../types/feed/models.js";
 import { User, UserDB } from "../types/user/models.js";
-import { ArticleListItem } from "../types/article/models.js";
+import {
+    ArticleDetailedEntity,
+    ArticleListItem,
+    ArticleListItemEntity,
+} from "../types/article/models.js";
 import { randomUUID } from "crypto";
 import { normalizeArticlePubDate } from "../services/articles.service.js";
 import { generateExcerpt } from "../types/article/validators.js";
@@ -28,15 +32,27 @@ export function entityToUser(record: UserDB): User {
     };
 }
 
-// TODO: This should have src from the article stored in the database
-export function itemToArticleListItem(item: Parser.Item): ArticleListItem {
+export function entityToDetailedArticle(row: ArticleDetailedEntity) {
     return {
-        id: randomUUID(),
-        feedId: randomUUID(),
-        title: item.title ?? "No title provided",
-        link: item.link ?? "No link provided",
-        pubDate: normalizeArticlePubDate(item),
-        excerpt: generateExcerpt(item.contentSnippet!),
+        id: row.id,
+        feedId: row.feed_id,
+        title: row.title,
+        link: row.link,
+        pubDate: row.pub_date,
+        content: row.content,
+    };
+}
+
+export function entityToArticleListItem(
+    row: ArticleListItemEntity
+): ArticleListItem {
+    return {
+        id: row.id,
+        feedId: row.feed_id,
+        title: row.title,
+        link: row.link,
+        pubDate: row.pub_date,
+        excerpt: row.excerpt,
     };
 }
 
@@ -49,5 +65,6 @@ export function itemToEntity(feedId: string, item: Parser.Item) {
         pub_date: normalizeArticlePubDate(item),
         content_hash: generateContentHash(item.content!),
         content: item.content ?? "No content provided",
+        excerpt: generateExcerpt(item.contentSnippet!),
     };
 }

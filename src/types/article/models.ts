@@ -1,13 +1,19 @@
-export type Article = {
+export type ArticleDetailedEntity = {
     id: string;
-    feedId: string;
+    feed_id: string;
     title: string;
     link: string;
-    pubDate: number;
-    contentHash: string;
+    pub_date: number;
     content: string;
-    createdAt: number;
-    updatedAt: number;
+};
+
+export type ArticleListItemEntity = {
+    id: string;
+    feed_id: string;
+    title: string;
+    link: string;
+    pub_date: number;
+    excerpt: string;
 };
 
 export type ArticleListItem = {
