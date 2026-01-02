@@ -1,27 +1,24 @@
-import * as bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
 import {
     existsByEmail,
-    findAllUsers,
-    findUserByEmail,
     insertUser,
-} from "../../db/user.queries.js";
-import { RouterIncomingMessage } from "../../types/http.js";
-import { UserDB } from "../../types/user/models.js";
-import {
-    LoginRequest,
-    RegisterUserRequest,
-} from "../../types/user/requests.js";
-import { generateAccessToken } from "../../utilities/jwt.js";
+    findUserByEmail,
+    findAllUsers,
+} from "../db/user.queries.js";
+import { RouterIncomingMessage } from "../types/http.js";
+import { UserDB } from "../types/user/models.js";
+import { RegisterUserRequest, LoginRequest } from "../types/user/requests.js";
+import { generateAccessToken } from "../utilities/jwt.js";
 import {
     sendConflictResponse,
     sendCreatedResponse,
     sendError,
-    sendSuccessResponse,
     sendUnauthorizedResponse,
-} from "../../utilities/response.js";
-import { entityToUser } from "../../utilities/transformers.js";
+    sendSuccessResponse,
+} from "../utilities/response.js";
+import { entityToUser } from "../utilities/transformers.js";
+import * as bcrypt from "bcrypt";
 
 export const registerUser = async (
     req: RouterIncomingMessage,

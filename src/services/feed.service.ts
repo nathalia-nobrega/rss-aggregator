@@ -1,0 +1,38 @@
+import Parser from "rss-parser";
+import { ExtractedFeedData } from "../types/feed/models.js";
+
+function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
+    return feedUrl.endsWith(".rss") ? "URL" : "XML";
+}
+
+export async function extractFeed(feedUrl: string): Promise<ExtractedFeedData> {
+    const feedType = getTypeOfFeed(feedUrl);
+    const feed = await parseFeed(feedUrl, feedType);
+
+    return {
+        description: feed.description || "No description found",
+        title: feed.title || "Untitled Feed",
+        link: feed.feedUrl || "No URL found",
+        items: feed.items,
+    };
+}
+
+/**
+ * VERY IMPORTANT NOTE:
+ * The rss-parser library changes the URL of XML feeds.
+ * If I pass https://beej.us/blog/rss.xml,
+ * the library parses it and gives me http://beej.us/blog/rss.xml,
+ * changing the HTTPS to HTTP.
+ *
+ */
+export async function parseFeed(feedUrl: string, feedType: "XML" | "URL") {
+    let parser = new Parser();
+    if (feedType === "XML") {
+        const res = await fetch(feedUrl);
+        const text = await res.text();
+        return (await parser.parseString(text)) as Parser.Output<{
+            [key: string]: any;
+        }>;
+    }
+    return await parser.parseURL(feedUrl);
+}

@@ -16,6 +16,6 @@ export type UserDataResponse = {
     id: string;
     username: string;
     email: string;
-    createdAt: Date;
+    createdAt: number;
     // show feeds maybe?
 };

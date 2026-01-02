@@ -1,21 +1,9 @@
+// Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
+// I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
+// But for now I believe this is an okay thing to do.
+
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
-import { extractFeed } from "../../services/feed/feed.service.js";
-import { RSSFeedData, RSSFeedDataDB } from "../../types/feed/models.js";
-import {
-    RSSFeedCreateRequest,
-    UpdateFeedRequest,
-} from "../../types/feed/requests.js";
-import { normalizeUrl } from "../../types/feed/validators.js";
-import { RouterIncomingMessage } from "../../types/http.js";
-import {
-    sendBadRequestResponse,
-    sendConflictResponse,
-    sendError,
-    sendNoContentResponse,
-    sendNotFoundResponse,
-    sendSuccessResponse,
-} from "../../utilities/response.js";
 import {
     allFeedsFromUserId,
     deleteFeedById,
@@ -23,12 +11,28 @@ import {
     findFeedByUserIdAndNormalizedUrl,
     insertFeed,
     updateFeedById,
-} from "../../db/feed.queries.js";
-import { entityToFeed } from "../../utilities/transformers.js";
-
-// Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
-// I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
-// But for now I believe this is an okay thing to do.
+} from "../db/feed.queries.js";
+import { extractFeed } from "../services/feed.service.js";
+import { RSSFeedDataDB } from "../types/feed/models.js";
+import {
+    RSSFeedCreateRequest,
+    UpdateFeedRequest,
+} from "../types/feed/requests.js";
+import { normalizeUrl } from "../types/feed/validators.js";
+import { RouterIncomingMessage } from "../types/http.js";
+import {
+    sendBadRequestResponse,
+    sendConflictResponse,
+    sendError,
+    sendNoContentResponse,
+    sendNotFoundResponse,
+    sendSuccessResponse,
+} from "../utilities/response.js";
+import { entityToFeed, itemToEntity } from "../utilities/transformers.js";
+import {
+    insertArticle,
+    insertManyInTransaction,
+} from "../db/article.queries.js";
 
 export const getAllFeeds = async (
     req: RouterIncomingMessage,
@@ -58,13 +62,17 @@ export const addNewFeed = async (
         const record = insertFeed.get(
             randomUUID(),
             req.userId!,
-            extractedData.url,
-            normalizeUrl(extractedData.url),
+            extractedData.link,
+            normalizeUrl(extractedData.link),
             extractedData.title,
             extractedData.description,
             "active",
             "high"
         ) as RSSFeedDataDB;
+        const items = extractedData.items!.slice(0, 20);
+        insertManyInTransaction(
+            items.map((article) => itemToEntity(record.id, article))
+        );
         return sendSuccessResponse(res, entityToFeed(record));
     } catch (err: any) {
         return sendError(res, 500, err.toString());

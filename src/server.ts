@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import http, { IncomingMessage, ServerResponse } from "http";
-import path from "path";
 import { routes } from "./routes/router.js";
 import { JSON_CONTENT_TYPE } from "./constants/http.js";
 import { Params, RouterIncomingMessage } from "./types/http.js";

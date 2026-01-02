@@ -1,10 +1,11 @@
+import { sendError } from "../utilities/response.js";
 import database from "./sqlite.js";
 
-export const findArticleByFeedIdAndUrl = database.prepare(
+export const findArticleByFeedIdAndLink = database.prepare(
     `
     SELECT id, content_hash
     FROM articles
-    WHERE feed_id = ? AND url = ?
+    WHERE feed_id = ? AND link = ?
     `
 );
 
@@ -14,19 +15,53 @@ export const insertArticle = database.prepare(
         id, 
         feed_id, 
         title, 
-        url, 
+        link, 
         pub_date, 
         content_hash, 
+        content,
         created_at, 
         updated_at)
     VALUES (
-        ?, ?, ?, ?, ?, ?, 
+        ?, ?, ?, ?, ?, ?, ?, 
         unixepoch('now', 'localtime'), 
         unixepoch('now', 'localtime')
     )
-    RETURNING id, feed_id, title, url, pub_date
+    RETURNING id, feed_id, title, link, pub_date
     `
 );
+
+export const insertManyInTransaction = (
+    rows: Array<{
+        id: string;
+        feed_id: string;
+        title: string;
+        link: string;
+        pub_date: number;
+        content_hash: string;
+        content: string;
+    }>
+) => {
+    database.exec("BEGIN TRANSACTION");
+
+    try {
+        for (const row of rows) {
+            console.debug("GOT HEREEEEE");
+            insertArticle.run(
+                row.id,
+                row.feed_id,
+                row.title,
+                row.link,
+                row.pub_date,
+                row.content_hash,
+                row.content
+            );
+        }
+        database.exec("COMMIT");
+    } catch (err: any) {
+        database.exec("ROLLBACK");
+        throw err;
+    }
+};
 
 export const updateArticleById = database.prepare(
     `
@@ -37,14 +72,14 @@ export const updateArticleById = database.prepare(
         content_hash = ?,
         updated_at = unixepoch('now', 'localtime')
     WHERE id = ?
-    RETURNING id, feed_id, title, url, pub_date
+    RETURNING id, feed_id, title, link, pub_date
     `
 );
 
 // TODO: Find out more about this cursor pagination!!!!!!!
 export const findAllArticlesByFeedId = database.prepare(
     `
-    SELECT id, feed_id, title, url, pub_date
+    SELECT id, feed_id, title, link, pub_date
     FROM articles
     WHERE feed_id = ?
     AND (
@@ -65,7 +100,7 @@ export const findDetailedArticleByIdAndUserId = database.prepare(
         a.id,
         a.feed_id,
         a.title,
-        a.url,
+        a.link,
         a.pub_date,
         a.content_hash,
         a.created_at,

@@ -1,3 +1,4 @@
+import Parser from "rss-parser";
 import { FeedPriority, FeedStatus } from "./enums.js";
 
 /**
@@ -6,7 +7,8 @@ import { FeedPriority, FeedStatus } from "./enums.js";
 export interface ExtractedFeedData {
     title: string;
     description: string;
-    url: string;
+    link: string;
+    items?: Parser.Item[];
 }
 
 /**
@@ -17,7 +19,6 @@ export interface RSSFeedData extends ExtractedFeedData {
     id: string;
     status: FeedStatus;
     priority: FeedPriority;
-    // items: Array<RSSFeedItem>
 }
 
 /**
@@ -34,6 +35,6 @@ export type RSSFeedDataDB = {
     priority: string;
     last_fetched: string;
     error_count: string;
-    created_at: string;
-    updated_at: string;
+    created_at: number;
+    updated_at: number;
 };

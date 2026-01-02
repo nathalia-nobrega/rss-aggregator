@@ -1,26 +1,26 @@
 import {
-    getAllFeeds,
+    getAllArticlesFromFeed,
+    getArticleById,
+} from "../handlers/article.handler.js";
+import {
     addNewFeed,
+    deleteFeed,
+    getAllFeeds,
     getFeedById,
     updateFeed,
-    deleteFeed,
-} from "../handlers/feed/feed.handler.js";
-import {
-    registerUser,
-    login,
-    getAllUsers,
-} from "../handlers/user/user.handler.js";
+} from "../handlers/feed.handler.js";
+import { resetDatabase } from "../handlers/reset.handler.js";
+import { getAllUsers, login, registerUser } from "../handlers/user.handler.js";
 import { withAuth } from "../middlewares/authentication.js";
 import { checkFeedOwnership } from "../middlewares/authorization.js";
 import { withRateLimit } from "../middlewares/rate-limit.js";
 import { runMiddlewares } from "../middlewares/utils/runner.js";
 import {
-    validateCreateFeedBody,
-    validateUpdateFeedBody,
-    validateRegisterUserBody,
     readAndParseBody,
+    validateCreateFeedBody,
+    validateRegisterUserBody,
+    validateUpdateFeedBody,
 } from "../middlewares/validation.js";
-import { resetDatabase } from "../handlers/test/reset.handler.js";
 import { Handler, Method, Route } from "./types.js";
 
 export const routes: Route[] = [];
@@ -129,4 +129,20 @@ addRoute(
     "POST",
     "/__test__/reset",
     runMiddlewares([withRateLimit], resetDatabase)
+);
+
+//testing for now
+addRoute(
+    "GET",
+    "/feeds/:id/articles",
+    runMiddlewares(
+        [withRateLimit, withAuth, checkFeedOwnership],
+        getAllArticlesFromFeed
+    )
+);
+
+addRoute(
+    "GET",
+    "/articles/:id",
+    runMiddlewares([withRateLimit, withAuth], getArticleById)
 );

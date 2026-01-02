@@ -1,7 +1,7 @@
 import { ServerResponse } from "http";
-import database from "../../db/sqlite.js";
-import { RouterIncomingMessage } from "../../types/http.js";
-import { sendError, sendNoContentResponse } from "../../utilities/response.js";
+import database from "../db/sqlite.js";
+import { RouterIncomingMessage } from "../types/http.js";
+import { sendNoContentResponse, sendError } from "../utilities/response.js";
 
 function listExistingResetTables(): string[] {
     const rows = database
