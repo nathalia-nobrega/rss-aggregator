@@ -1,7 +1,3 @@
-// Note: In all of these handlers, I am assuming that url is not undefined since I already validate that in server.ts
-// I know there are better ways to handle this and this could possible lead to errors in a more complex codebase,
-// But for now I believe this is an okay thing to do.
-
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
 import {
