@@ -6,6 +6,7 @@ import {
 } from "../types/article/models.js";
 import {
     findAllArticlesByFeedId,
+    findArticleByFeedIdAndLink,
     findDetailedArticleByIdAndUserId,
 } from "../db/article.queries.js";
 import {
@@ -21,15 +22,15 @@ export const getAllArticlesFromFeed = async (
     req: RouterIncomingMessage,
     res: ServerResponse
 ) => {
+    const feedId = req.params["id"]!;
     const articles = findAllArticlesByFeedId.all(
-        req.params["id"]!,
+        feedId,
         null,
         null,
         null,
         null,
         20
     ) as ArticleListItemEntity[];
-
     const list = articles.map((art) => entityToArticleListItem(art));
     return sendSuccessResponse(res, list);
 };

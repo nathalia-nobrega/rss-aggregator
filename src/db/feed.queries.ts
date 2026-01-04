@@ -38,7 +38,7 @@ export const deleteFeedById = database.prepare(
 
 export const findAllActiveFeeds = database.prepare(
     `
-    SELECT * 
+    SELECT id, url 
     FROM feeds 
     WHERE status = 'active'
     ORDER BY 
@@ -47,8 +47,7 @@ export const findAllActiveFeeds = database.prepare(
             WHEN 'medium' THEN 2
             ELSE 3
         END,
-        priority ASC, 
-        last_fetched ASC;
+        COALESCE(last_fetched, 0) ASC;
     `
 );
 
@@ -66,9 +65,11 @@ export const markFeedAsErrored = database.prepare(
     `
         UPDATE feeds
         SET
-            error_count += 1,
+            error_count = error_count + 1,
             status = CASE 
-                WHEN error_count = 5 THEN 'paused'
+                WHEN error_count + 1 = 5 THEN 'paused'
+                ELSE status
+
             END
         WHERE id = ?
     `

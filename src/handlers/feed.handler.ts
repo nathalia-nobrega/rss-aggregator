@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { ServerResponse } from "http";
+import { insertArticle } from "../db/article.queries.js";
 import {
     allFeedsFromUserId,
     deleteFeedById,
@@ -24,11 +25,7 @@ import {
     sendNotFoundResponse,
     sendSuccessResponse,
 } from "../utilities/response.js";
-import { entityToFeed, itemToEntity } from "../utilities/transformers.js";
-import {
-    insertArticle,
-    insertManyInTransaction,
-} from "../db/article.queries.js";
+import { entityToFeed, parserItemToEntity } from "../utilities/transformers.js";
 
 export const getAllFeeds = async (
     req: RouterIncomingMessage,
@@ -69,8 +66,21 @@ export const addNewFeed = async (
         ) as RSSFeedDataDB;
 
         const articles = extractedData.items!.slice(0, 20);
-        insertManyInTransaction(
-            articles.map((article) => itemToEntity(record.id, article))
+        await Promise.all(
+            articles.map((article) => {
+                const parsedArticle = parserItemToEntity(record.id, article);
+
+                insertArticle.run(
+                    parsedArticle.id,
+                    parsedArticle.feed_id,
+                    parsedArticle.title,
+                    parsedArticle.link,
+                    parsedArticle.pub_date,
+                    parsedArticle.content_hash,
+                    parsedArticle.content,
+                    parsedArticle.excerpt
+                );
+            })
         );
 
         return sendSuccessResponse(res, entityToFeed(record));

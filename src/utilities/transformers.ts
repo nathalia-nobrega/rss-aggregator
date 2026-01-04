@@ -56,9 +56,9 @@ export function entityToArticleListItem(
     };
 }
 
-export function itemToEntity(feedId: string, item: Parser.Item) {
+export function parserItemToEntity(feedId: string, item: Parser.Item) {
     return {
-        id: randomUUID(),
+        id: randomUUID(), // IGNORE THIS ID IF BEING USED IN DEDUP LOGIC, USE ARTICLE IN DB'S ID INSTEAD
         feed_id: feedId,
         title: item.title ?? "No title provided",
         link: item.link ?? "No link provided",

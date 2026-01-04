@@ -1,83 +1,32 @@
-import { sendError } from "../utilities/response.js";
 import database from "./sqlite.js";
 
 export const findArticleByFeedIdAndLink = database.prepare(
     `
-    SELECT id, content_hash
+    SELECT id,title, content_hash
     FROM articles
     WHERE feed_id = ? AND link = ?
     `
 );
 
-export const insertArticle = database.prepare(
-    `
+export const insertArticle = database.prepare(`
     INSERT INTO articles (
-        id, 
-        feed_id, 
-        title, 
-        link, 
-        pub_date, 
-        content_hash, 
-        content,
-        excerpt,
-        created_at, 
-        updated_at)
-    VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, 
-        unixepoch('now', 'localtime'), 
-        unixepoch('now', 'localtime')
+        id, feed_id, title, link, pub_date, content_hash, content, excerpt,
+        created_at, updated_at
     )
-    RETURNING id, feed_id, title, link, pub_date
-    `
-);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch('now', 'localtime'), unixepoch('now', 'localtime'))
+`);
 
-export const insertManyInTransaction = (
-    rows: Array<{
-        id: string;
-        feed_id: string;
-        title: string;
-        link: string;
-        pub_date: number;
-        content_hash: string;
-        content: string;
-        excerpt: string;
-    }>
-) => {
-    database.exec("BEGIN TRANSACTION");
-
-    try {
-        for (const row of rows) {
-            insertArticle.run(
-                row.id,
-                row.feed_id,
-                row.title,
-                row.link,
-                row.pub_date,
-                row.content_hash,
-                row.content,
-                row.excerpt
-            );
-        }
-        database.exec("COMMIT");
-    } catch (err: any) {
-        database.exec("ROLLBACK");
-        throw err;
-    }
-};
-
-// should the excerpt be updated too?
-export const updateArticleById = database.prepare(
-    `
+export const updateArticleById = database.prepare(`
     UPDATE articles
     SET
         title = ?,
         pub_date = ?,
         content_hash = ?,
+        content = ?,
+        excerpt = ?,
         updated_at = unixepoch('now', 'localtime')
     WHERE id = ?
-    RETURNING id, feed_id, title, link, pub_date
-    `
-);
+`);
 
 // TODO: Find out more about this cursor pagination!!!!!!!
 export const findAllArticlesByFeedId = database.prepare(

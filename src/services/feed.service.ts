@@ -1,7 +1,7 @@
 import Parser from "rss-parser";
 import { ExtractedFeedData } from "../types/feed/models.js";
 
-function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
+export function getTypeOfFeed(feedUrl: string): "XML" | "URL" {
     return feedUrl.endsWith(".rss") ? "URL" : "XML";
 }
 

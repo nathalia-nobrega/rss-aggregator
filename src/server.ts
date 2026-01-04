@@ -1,61 +1,32 @@
 import dotenv from "dotenv";
 import http, { IncomingMessage, ServerResponse } from "http";
-import { routes } from "./routes/router.js";
-import { JSON_CONTENT_TYPE } from "./constants/http.js";
-import { Params, RouterIncomingMessage } from "./types/http.js";
+import { syncAllFeeds } from "./services/sync.service.js";
+import { findRoute } from "./utilities/request.js";
 
 // SETUP
 dotenv.config();
 
-// TODO: Move route matching logic to another file
 const PORT = Number(process.env.PORT) | 8000;
 const HOST = "localhost";
+const SYNC_INTERVAL_MS =
+    Number(process.env.SYNC_INTERVAL_MINUTES ?? 30) * 60 * 1000;
+
 const server = http.createServer(
     (req: IncomingMessage, res: ServerResponse) => {
-        const { url, method } = req;
+        const result = findRoute(req, res);
+        if (!result) return;
 
-        if (!url || !method) {
-            res.writeHead(400).end(JSON.stringify("Bad Request"));
-            return;
-        }
-
-        const route = routes.find(
-            (rt) => rt.method === method && rt.regex.test(url)
-        );
-
-        // handle if URL is present but method is wrong
-        if (!route) {
-            if (routes.find((rt) => rt.regex.test(url))) {
-                res.writeHead(405, JSON_CONTENT_TYPE);
-                res.end(
-                    JSON.stringify(
-                        "The target resource doesn't support this method"
-                    )
-                );
-                return;
-            }
-            // handle if URL isn't present
-            res.writeHead(404, JSON_CONTENT_TYPE);
-            res.end(JSON.stringify("Cannot find the requested resource"));
-            return;
-        }
-
-        // handle the request
-        const match = route.regex.exec(url);
-
-        const paramValues = match!.slice(1);
-        const params: Params = {};
-
-        route.pathParams.forEach((key, index) => {
-            // the keys and values arrays should match in the order
-            // e.g params['id'] = paramValues['123-24-afda-c']
-            params[key] = paramValues[index]!;
-        });
-        const parsedReq = req as RouterIncomingMessage;
-        parsedReq.params = params;
+        // execute route handler
+        const { route, parsedReq } = result;
         route.handler(parsedReq, res);
     }
 );
+
+// polling engine!!!!!!
+setInterval(() => {
+    syncAllFeeds().catch((e) => console.error("[sync] Interval error", e));
+}, SYNC_INTERVAL_MS);
+console.log("[sync] Poller started.");
 
 server.listen(PORT, HOST, () => {
     console.log(`Server running at http://${HOST}:${PORT}`);

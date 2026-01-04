@@ -3,6 +3,8 @@ import Parser from "rss-parser";
 import { fileURLToPath } from "url";
 import * as fs from "node:fs";
 import { generateExcerpt } from "../types/article/validators.js";
+import { getFeedById } from "../handlers/feed.handler.js";
+import { getTypeOfFeed } from "./feed.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,7 +56,8 @@ export interface Item {
 }
 // END from the code of the rss-parser library
 
-export async function fetchArticles(feedUrl: string, feedType: "XML" | "URL") {
+export async function fetchArticles(feedUrl: string): Promise<Parser.Item[]> {
+    const feedType = getTypeOfFeed(feedUrl);
     let parser = new Parser();
     if (feedType === "XML") {
         const res = await fetch(feedUrl);
