@@ -132,4 +132,4 @@ The aggregator includes a background synchronization service that:
 -   [ ] Websocket support for real-time article notifications.
 -   [ ] Multi-provider AI support (Anthropic/Claude/Gemini).
 -   [ ] Export features (OPML, PDF summaries).
--   [ ] Frontend dashboard (next.js).
+-   [ ] Frontend
