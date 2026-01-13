@@ -11,8 +11,13 @@ import {
 import { processWithConcurrency } from "../utilities/concurrency.js";
 import { parserItemToEntity } from "../utilities/transformers.js";
 import { fetchArticles } from "./articles.service.js";
+import { generateArticleSummary } from "./openai.service.js";
 
-export async function syncOneFeed(feedId: string, feedUrl: string) {
+export async function syncOneFeed(
+    feedId: string,
+    feedUrl: string,
+    priority: string
+) {
     try {
         const fetchedArticles = await fetchArticles(feedUrl);
         const parsedArticles = fetchedArticles.map((article) =>
@@ -22,7 +27,7 @@ export async function syncOneFeed(feedId: string, feedUrl: string) {
         let updated = 0;
 
         // dedup logic
-        parsedArticles.forEach((parsedArticle) => {
+        for (const parsedArticle of parsedArticles) {
             try {
                 const existingArticle = findArticleByFeedIdAndLink.get(
                     feedId,
@@ -31,6 +36,14 @@ export async function syncOneFeed(feedId: string, feedUrl: string) {
 
                 if (!existingArticle) {
                     // if article doesn't exist, insert
+                    let aiSummary = null;
+                    if (priority === "high") {
+                        aiSummary = await generateArticleSummary(
+                            parsedArticle.title,
+                            parsedArticle.content
+                        );
+                    }
+
                     insertArticle.run(
                         parsedArticle.id,
                         parsedArticle.feed_id,
@@ -39,7 +52,8 @@ export async function syncOneFeed(feedId: string, feedUrl: string) {
                         parsedArticle.pub_date,
                         parsedArticle.content_hash,
                         parsedArticle.content,
-                        parsedArticle.excerpt
+                        parsedArticle.excerpt,
+                        aiSummary
                     );
                 } else {
                     // if article exists, verify if hashes are equal
@@ -60,7 +74,7 @@ export async function syncOneFeed(feedId: string, feedUrl: string) {
             } catch (err: any) {
                 console.error(err.toString());
             }
-        });
+        }
         markFeedAsSuccessful.get(feedId);
     } catch (err: any) {
         markFeedAsErrored.get(feedId);
@@ -83,10 +97,11 @@ export async function syncAllFeeds() {
         const feeds = findAllActiveFeeds.all() as Array<{
             id: string;
             url: string;
+            priority: string;
         }>;
 
         await processWithConcurrency(feeds, 5, async (feed) => {
-            await syncOneFeed(feed.id, feed.url);
+            await syncOneFeed(feed.id, feed.url, feed.priority);
         });
 
         console.debug("[sync] Sync cycle completed");

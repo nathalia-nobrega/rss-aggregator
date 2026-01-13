@@ -26,6 +26,7 @@ import {
     sendSuccessResponse,
 } from "../utilities/response.js";
 import { entityToFeed, parserItemToEntity } from "../utilities/transformers.js";
+import { generateArticleSummary } from "../services/openai.service.js";
 
 export const getAllFeeds = async (
     req: RouterIncomingMessage,
@@ -67,8 +68,15 @@ export const addNewFeed = async (
 
         const articles = extractedData.items!.slice(0, 20);
         await Promise.all(
-            articles.map((article) => {
+            articles.map(async (article) => {
                 const parsedArticle = parserItemToEntity(record.id, article);
+
+                const aiSummary = await generateArticleSummary(
+                    parsedArticle.title,
+                    parsedArticle.content
+                );
+
+                console.debug(aiSummary);
 
                 insertArticle.run(
                     parsedArticle.id,
@@ -78,7 +86,8 @@ export const addNewFeed = async (
                     parsedArticle.pub_date,
                     parsedArticle.content_hash,
                     parsedArticle.content,
-                    parsedArticle.excerpt
+                    parsedArticle.excerpt,
+                    aiSummary
                 );
             })
         );

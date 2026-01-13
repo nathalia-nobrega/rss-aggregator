@@ -38,7 +38,7 @@ export const deleteFeedById = database.prepare(
 
 export const findAllActiveFeeds = database.prepare(
     `
-    SELECT id, url 
+    SELECT id, url, priority 
     FROM feeds 
     WHERE status = 'active'
     ORDER BY 

@@ -10,10 +10,10 @@ export const findArticleByFeedIdAndLink = database.prepare(
 
 export const insertArticle = database.prepare(`
     INSERT INTO articles (
-        id, feed_id, title, link, pub_date, content_hash, content, excerpt,
+        id, feed_id, title, link, pub_date, content_hash, content, excerpt, summary,
         created_at, updated_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch('now', 'localtime'), unixepoch('now', 'localtime'))
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch('now', 'localtime'), unixepoch('now', 'localtime'))
 `);
 
 export const updateArticleById = database.prepare(`

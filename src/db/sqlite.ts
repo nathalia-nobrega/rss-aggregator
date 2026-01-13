@@ -55,6 +55,7 @@ const createArticles = `
         content_hash TEXT NOT NULL, -- title + content hash
         content TEXT NOT NULL,
         excerpt TEXT NOT NULL,
+        summary TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
     );
@@ -72,5 +73,12 @@ database.exec("PRAGMA foreign_keys = ON");
 database.exec(createUsers);
 database.exec(createFeeds);
 database.exec(createArticles);
+
+// Add summary column to articles if it doesn't exist
+try {
+    database.exec("ALTER TABLE articles ADD COLUMN summary TEXT");
+} catch (e) {
+    // Column might already exist
+}
 
 export default database;
