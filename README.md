@@ -9,17 +9,6 @@ A high-performance, lightweight RSS aggregation service built with **zero extern
 
 ---
 
-## Table of Contents
-
--   [Core Features](#-core-features)
--   [Architecture Deep Dive](#-architecture-deep-dive)
--   [Tech Stack](#-tech-stack)
--   [Getting Started](#-getting-started)
--   [API Documentation](#-api-documentation)
--   [Internal Polling Engine](#-internal-polling-engine)
-
----
-
 ## Core Features
 
 ### Usage of AI for article summarization
